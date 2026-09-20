@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Create Tenant Profile — RentalPro{% endblock %}
+{% block content %}
+<h1>Create Tenant Profile</h1>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if unit_id %}<input type="hidden" name="unit_id" value="{{ unit_id }}">{% endif %}
+    <div class="field">
+      <label for="full_name">Full name</label>
+      <input type="text" id="full_name" name="full_name" value="{{ form.get('full_name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="national_id">National ID number</label>
+      <input type="text" id="national_id" name="national_id" value="{{ form.get('national_id', '') }}" required>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="email">Email (optional)</label>
+        <input type="email" id="email" name="email" value="{{ form.get('email', '') }}">
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="text" id="phone" name="phone" value="{{ form.get('phone', '') }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="emergency_contact">Emergency contact</label>
+      <input type="text" id="emergency_contact" name="emergency_contact" value="{{ form.get('emergency_contact', '') }}">
+    </div>
+    <button class="btn" type="submit">Save Profile</button>
+    <a href="{{ url_for('tenants.index') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

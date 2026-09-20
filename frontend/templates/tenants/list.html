@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}Tenants — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Tenants</h1>
+  <a href="{{ url_for('tenants.add') }}" class="btn">+ Create Tenant Profile</a>
+</div>
+{% if tenants %}
+<div class="card mt-1">
+  <table>
+    <thead><tr><th>Name</th><th>National ID</th><th>Unit</th><th>Balance</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for tenant in tenants %}
+      {% set lease = tenant.active_lease %}
+      <tr>
+        <td><a href="{{ url_for('tenants.detail', tenant_id=tenant.id) }}">{{ tenant.user.full_name }}</a></td>
+        <td>{{ tenant.national_id }}</td>
+        <td>{{ lease.unit.unit_code if lease else "—" }}</td>
+        <td>{{ "%.2f"|format(lease.balance) if lease else "—" }}</td>
+        <td>{% if tenant.is_blacklisted %}<span class="badge badge-red">Blacklisted</span>{% elif lease %}{{ status_badge(lease.status) }}{% else %}<span class="badge badge-gray">No Lease</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state"><p>No tenants yet.</p></div>
+{% endif %}
+{% endblock %}

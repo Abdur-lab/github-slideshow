@@ -1,0 +1,439 @@
+"""SQLAlchemy models for RentalPro (13 tables, per Deliverable 2 ERD)."""
+import calendar
+import uuid
+from datetime import date, datetime, timedelta
+
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from backend.extensions import db
+
+PASSWORD_HASH_METHOD = "pbkdf2:sha256:600000"
+
+
+def gen_uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def utcnow() -> datetime:
+    return datetime.utcnow()
+
+
+# --- Role / status constants -------------------------------------------------
+
+ROLE_ADMIN = "ADMIN"
+ROLE_OWNER = "PROPERTY_OWNER"
+ROLE_MANAGER = "PROPERTY_MANAGER"
+ROLE_STAFF = "MAINTENANCE_STAFF"
+ROLE_TENANT = "TENANT"
+ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER, ROLE_STAFF, ROLE_TENANT)
+MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
+
+PROPERTY_TYPES = ("RESIDENTIAL", "COMMERCIAL", "MIXED")
+PROPERTY_STATUSES = ("ACTIVE", "ARCHIVED")
+
+UNIT_TYPES = ("STUDIO", "1BR", "2BR", "3BR", "SHOP", "OFFICE")
+UNIT_STATUSES = ("VACANT", "OCCUPIED", "UNDER_MAINTENANCE", "ARCHIVED")
+
+LEASE_STATUSES = ("ACTIVE", "TERMINATED", "EXPIRED")
+
+PAYMENT_METHODS = ("CASH", "BANK_TRANSFER", "ONLINE", "CHEQUE")
+
+MAINT_CATEGORIES = ("PLUMBING", "ELECTRICAL", "STRUCTURAL", "HVAC", "PEST_CONTROL", "OTHER")
+MAINT_SEVERITIES = ("LOW", "MEDIUM", "HIGH", "EMERGENCY")
+MAINT_STATUSES = ("SUBMITTED", "ACKNOWLEDGED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLOSED")
+
+NOTIFICATION_TYPES = ("EMAIL", "SMS")
+NOTIFICATION_STATUSES = ("PENDING", "SENT", "FAILED")
+
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(30), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
+    opt_out_sms = db.Column(db.Boolean, nullable=False, default=False)
+    opt_out_email = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    tenant_profile = db.relationship(
+        "Tenant", backref="user", uselist=False, cascade="all, delete-orphan"
+    )
+    properties = db.relationship("Property", backref="owner", lazy="dynamic")
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password, method=PASSWORD_HASH_METHOD)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+    def is_locked(self) -> bool:
+        return bool(self.locked_until and self.locked_until > utcnow())
+
+    def __repr__(self):
+        return f"<User {self.email} ({self.role})>"
+
+
+class Property(db.Model):
+    __tablename__ = "properties"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    owner_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    address = db.Column(db.String(300), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(20), nullable=False, default="RESIDENTIAL")
+    currency = db.Column(db.String(3), nullable=False, default="USD")
+    description = db.Column(db.Text, nullable=True)
+    property_code = db.Column(db.String(20), unique=True, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="ACTIVE")
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    units = db.relationship("Unit", backref="property", cascade="all, delete-orphan", lazy="dynamic")
+
+    @staticmethod
+    def generate_property_code() -> str:
+        return f"PROP-{uuid.uuid4().hex[:4].upper()}"
+
+    @property
+    def occupancy_rate(self) -> float:
+        units = self.units.filter(Unit.status != "ARCHIVED").all()
+        if not units:
+            return 0.0
+        occupied = sum(1 for u in units if u.status == "OCCUPIED")
+        return round((occupied / len(units)) * 100, 1)
+
+
+class Unit(db.Model):
+    __tablename__ = "units"
+    __table_args__ = (
+        db.UniqueConstraint("property_id", "unit_number", name="uq_unit_property_number"),
+        db.Index("ix_unit_property_status", "property_id", "status"),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    property_id = db.Column(db.String(36), db.ForeignKey("properties.id"), nullable=False)
+    unit_number = db.Column(db.String(20), nullable=False)
+    floor = db.Column(db.String(10), nullable=True)
+    type = db.Column(db.String(20), nullable=False, default="STUDIO")
+    size_sqm = db.Column(db.Float, nullable=True)
+    monthly_rent = db.Column(db.Float, nullable=False)
+    deposit = db.Column(db.Float, nullable=False, default=0)
+    status = db.Column(db.String(20), nullable=False, default="VACANT")
+    unit_code = db.Column(db.String(30), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    leases = db.relationship("Lease", backref="unit", lazy="dynamic")
+    maintenance_requests = db.relationship("MaintenanceRequest", backref="unit", lazy="dynamic")
+
+    @staticmethod
+    def generate_unit_code(property_code: str, unit_number: str) -> str:
+        return f"{property_code}-U{uuid.uuid4().hex[:4].upper()}"
+
+    @property
+    def active_lease(self):
+        return self.leases.filter_by(status="ACTIVE").order_by(Lease.start_date.desc()).first()
+
+
+class Tenant(db.Model):
+    __tablename__ = "tenants"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), unique=True, nullable=False)
+    national_id = db.Column(db.String(50), unique=True, nullable=False)
+    phone = db.Column(db.String(30), nullable=True)
+    emergency_contact = db.Column(db.String(200), nullable=True)
+    is_blacklisted = db.Column(db.Boolean, nullable=False, default=False)
+    blacklist_reason = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    leases = db.relationship("Lease", backref="tenant", lazy="dynamic")
+    maintenance_requests = db.relationship("MaintenanceRequest", backref="tenant", lazy="dynamic")
+
+    @property
+    def active_lease(self):
+        return self.leases.filter_by(status="ACTIVE").order_by(Lease.start_date.desc()).first()
+
+
+class TenantInvitation(db.Model):
+    __tablename__ = "tenant_invitations"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    unit_id = db.Column(db.String(36), db.ForeignKey("units.id"), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    accepted = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    unit = db.relationship("Unit")
+
+    @staticmethod
+    def new_token_expiry(hours: int = 48) -> datetime:
+        return utcnow() + timedelta(hours=hours)
+
+    @property
+    def is_valid(self) -> bool:
+        return (not self.accepted) and self.expires_at > utcnow()
+
+
+class PasswordReset(db.Model):
+    __tablename__ = "password_resets"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    @staticmethod
+    def new_token_expiry(hours: int = 1) -> datetime:
+        return utcnow() + timedelta(hours=hours)
+
+    @property
+    def is_valid(self) -> bool:
+        return (not self.used) and self.expires_at > utcnow()
+
+
+class Lease(db.Model):
+    __tablename__ = "leases"
+    __table_args__ = (
+        db.Index("ix_lease_unit_status", "unit_id", "status"),
+        db.Index("ix_lease_tenant", "tenant_id"),
+        db.Index("ix_lease_end_date", "end_date", "status"),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    unit_id = db.Column(db.String(36), db.ForeignKey("units.id"), nullable=False)
+    tenant_id = db.Column(db.String(36), db.ForeignKey("tenants.id"), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    monthly_rent = db.Column(db.Float, nullable=False)
+    deposit = db.Column(db.Float, nullable=False, default=0)
+    due_day = db.Column(db.Integer, nullable=False, default=1)
+    status = db.Column(db.String(20), nullable=False, default="ACTIVE")
+    document_path = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    payments = db.relationship("RentPayment", backref="lease", lazy="dynamic")
+
+    def _clip_day(self, year: int, month: int) -> int:
+        last_day = calendar.monthrange(year, month)[1]
+        return min(self.due_day, last_day)
+
+    def first_due_date(self) -> date:
+        """First rent due date on/after the lease start, honouring due_day
+        with month-end clipping (e.g. due_day=31 in February)."""
+        year, month = self.start_date.year, self.start_date.month
+        day = self._clip_day(year, month)
+        candidate = date(year, month, day)
+        if candidate < self.start_date:
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+            day = self._clip_day(year, month)
+            candidate = date(year, month, day)
+        return candidate
+
+    def _advance_month(self, d: date) -> date:
+        year, month = d.year, d.month + 1
+        if month > 12:
+            month, year = 1, year + 1
+        return date(year, month, self._clip_day(year, month))
+
+    def total_due_to_date(self, as_of: date = None) -> float:
+        """Number of elapsed rent periods (inclusive) times monthly rent."""
+        as_of = as_of or date.today()
+        first_due = self.first_due_date()
+        if as_of < first_due:
+            return 0.0
+        periods = 1
+        due = first_due
+        while True:
+            due = self._advance_month(due)
+            if due > as_of:
+                break
+            periods += 1
+        return round(periods * self.monthly_rent, 2)
+
+    def current_due_date(self, as_of: date = None):
+        """Due date of the most recently started billing period, or None
+        if the lease has not started its first period yet."""
+        as_of = as_of or date.today()
+        first_due = self.first_due_date()
+        if as_of < first_due:
+            return None
+        current = first_due
+        while True:
+            nxt = self._advance_month(current)
+            if nxt > as_of:
+                return current
+            current = nxt
+
+    def next_due_date(self, as_of: date = None) -> date:
+        """Due date of the next not-yet-started billing period."""
+        as_of = as_of or date.today()
+        d = self.first_due_date()
+        while d <= as_of:
+            d = self._advance_month(d)
+        return d
+
+    @property
+    def total_paid(self) -> float:
+        total = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+            RentPayment.lease_id == self.id
+        ).scalar()
+        return round(float(total or 0.0), 2)
+
+    @property
+    def balance(self) -> float:
+        return max(0.0, round(self.total_due_to_date() - self.total_paid, 2))
+
+    @property
+    def credit(self) -> float:
+        return max(0.0, round(self.total_paid - self.total_due_to_date(), 2))
+
+    @property
+    def is_overdue(self) -> bool:
+        return self.status == "ACTIVE" and self.balance > 0
+
+
+class RentPayment(db.Model):
+    __tablename__ = "rent_payments"
+    __table_args__ = (db.Index("ix_payment_lease_date", "lease_id", "paid_at"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    lease_id = db.Column(db.String(36), db.ForeignKey("leases.id"), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    method = db.Column(db.String(20), nullable=False)
+    receipt_number = db.Column(db.String(40), unique=True, nullable=False)
+    gateway_ref = db.Column(db.String(120), unique=True, nullable=True)
+    paid_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    notes = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    @staticmethod
+    def generate_receipt_number() -> str:
+        return f"RCP-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+
+
+class MaintenanceRequest(db.Model):
+    __tablename__ = "maintenance_requests"
+    __table_args__ = (
+        db.Index("ix_maint_assigned_status", "assigned_to", "status"),
+        db.Index("ix_maint_target_status", "target_date", "status"),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    unit_id = db.Column(db.String(36), db.ForeignKey("units.id"), nullable=False)
+    tenant_id = db.Column(db.String(36), db.ForeignKey("tenants.id"), nullable=False)
+    ticket_number = db.Column(db.String(40), unique=True, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(20), nullable=False, default="OTHER")
+    severity = db.Column(db.String(20), nullable=False, default="MEDIUM")
+    status = db.Column(db.String(20), nullable=False, default="SUBMITTED")
+    assigned_to = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
+    target_date = db.Column(db.Date, nullable=True)
+    escalated = db.Column(db.Boolean, nullable=False, default=False)
+    satisfaction_rating = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    costs = db.relationship("MaintenanceCost", backref="request", cascade="all, delete-orphan", lazy="dynamic")
+    notes_log = db.relationship("MaintenanceNote", backref="request", cascade="all, delete-orphan", lazy="dynamic")
+    assignee = db.relationship("User", foreign_keys=[assigned_to])
+
+    @staticmethod
+    def generate_ticket_number() -> str:
+        return f"MNT-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+
+    @property
+    def total_cost(self) -> float:
+        total = db.session.query(db.func.coalesce(db.func.sum(MaintenanceCost.amount), 0.0)).filter(
+            MaintenanceCost.request_id == self.id
+        ).scalar()
+        return round(float(total or 0.0), 2)
+
+    @property
+    def is_overdue(self) -> bool:
+        return (
+            self.target_date is not None
+            and self.status not in ("COMPLETED", "CLOSED")
+            and self.target_date < date.today()
+        )
+
+
+class MaintenanceCost(db.Model):
+    __tablename__ = "maintenance_costs"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    request_id = db.Column(db.String(36), db.ForeignKey("maintenance_requests.id"), nullable=False)
+    category = db.Column(db.String(30), nullable=False, default="OTHER")
+    amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(3), nullable=False, default="USD")
+    description = db.Column(db.String(300), nullable=True)
+    incurred_at = db.Column(db.Date, nullable=False, default=date.today)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class MaintenanceNote(db.Model):
+    __tablename__ = "maintenance_notes"
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    request_id = db.Column(db.String(36), db.ForeignKey("maintenance_requests.id"), nullable=False)
+    author_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    note = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    author = db.relationship("User")
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+    __table_args__ = (db.Index("ix_notification_recipient_status", "recipient_id", "status"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    recipient_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    type = db.Column(db.String(10), nullable=False, default="EMAIL")
+    subject = db.Column(db.String(200), nullable=True)
+    body = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(10), nullable=False, default="PENDING")
+    retry_count = db.Column(db.Integer, nullable=False, default=0)
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
+    __table_args__ = (
+        db.Index("ix_audit_entity", "entity_type", "entity_id"),
+        db.Index("ix_audit_user_created", "user_id", "created_at"),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
+    action = db.Column(db.String(100), nullable=False)
+    entity_type = db.Column(db.String(50), nullable=False)
+    entity_id = db.Column(db.String(36), nullable=True)
+    old_value = db.Column(db.JSON, nullable=True)
+    new_value = db.Column(db.JSON, nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)

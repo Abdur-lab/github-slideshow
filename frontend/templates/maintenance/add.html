@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Submit Maintenance Request — RentalPro{% endblock %}
+{% block content %}
+<h1>Submit Maintenance Request</h1>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" value="{{ form.get('title', '') }}" required>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          {% for c in categories %}<option value="{{ c }}" {% if form.get('category') == c %}selected{% endif %}>{{ c.replace('_', ' ').title() }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="severity">Severity</label>
+        <select id="severity" name="severity">
+          {% for s in severities %}<option value="{{ s }}" {% if form.get('severity') == s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" required>{{ form.get('description', '') }}</textarea>
+    </div>
+    <button class="btn" type="submit">Submit Request</button>
+    <a href="{{ url_for('portal.index') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

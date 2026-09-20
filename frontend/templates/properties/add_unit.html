@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Add Unit — RentalPro{% endblock %}
+{% block content %}
+<h1>Add Unit to {{ property.name }}</h1>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="unit_number">Unit number</label>
+        <input type="text" id="unit_number" name="unit_number" value="{{ form.get('unit_number', '') }}" required>
+      </div>
+      <div class="field">
+        <label for="floor">Floor</label>
+        <input type="text" id="floor" name="floor" value="{{ form.get('floor', '') }}">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="type">Type</label>
+        <select id="type" name="type">
+          {% for t in types %}<option value="{{ t }}" {% if form.get('type') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="size_sqm">Size (sqm)</label>
+        <input type="number" step="0.1" id="size_sqm" name="size_sqm" value="{{ form.get('size_sqm', '') }}">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="monthly_rent">Monthly rent</label>
+        <input type="number" step="0.01" id="monthly_rent" name="monthly_rent" value="{{ form.get('monthly_rent', '') }}" required>
+      </div>
+      <div class="field">
+        <label for="deposit">Security deposit</label>
+        <input type="number" step="0.01" id="deposit" name="deposit" value="{{ form.get('deposit', '') }}">
+      </div>
+    </div>
+    <button class="btn" type="submit">Save Unit</button>
+    <a href="{{ url_for('properties.detail', property_id=property.id) }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

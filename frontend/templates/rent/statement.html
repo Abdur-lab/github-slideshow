@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Rent Statement — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Rent Statement</h1>
+  <a class="btn" href="{{ url_for('rent.statement_pdf', lease_id=lease.id) }}">Download PDF</a>
+</div>
+<div class="card">
+  <p><strong>{{ lease.tenant.user.full_name }}</strong> — {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
+  <p class="text-muted">Lease: {{ lease.start_date }} to {{ lease.end_date }}</p>
+  {% if payments %}
+  <table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Receipt #</th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr><td>{{ p.paid_at }}</td><td>{{ "%.2f"|format(p.amount) }}</td><td>{{ p.method }}</td><td>{{ p.receipt_number }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No activity found for the selected period.</p>
+  {% endif %}
+  <div class="grid grid-3 mt-1">
+    <div class="stat-tile"><div class="label">Total Due</div><div class="value">{{ "%.2f"|format(lease.total_due_to_date()) }}</div></div>
+    <div class="stat-tile"><div class="label">Total Paid</div><div class="value">{{ "%.2f"|format(lease.total_paid) }}</div></div>
+    <div class="stat-tile"><div class="label">Balance</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
+  </div>
+</div>
+{% endblock %}

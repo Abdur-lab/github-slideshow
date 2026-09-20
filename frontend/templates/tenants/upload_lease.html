@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Upload Lease — RentalPro{% endblock %}
+{% block content %}
+<h1>Upload Lease for {{ tenant.user.full_name }}</h1>
+<div class="card" style="max-width:600px">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="unit_id">Unit</label>
+      <select id="unit_id" name="unit_id" required>
+        <option value="">Select a vacant unit&hellip;</option>
+        {% for u in vacant_units %}
+          <option value="{{ u.id }}" {% if preselect_unit_id == u.id %}selected{% endif %}>{{ u.unit_code }} — {{ u.property.name }} ({{ "%.2f"|format(u.monthly_rent) }}/mo)</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="start_date">Lease start date</label>
+        <input type="date" id="start_date" name="start_date" required>
+      </div>
+      <div class="field">
+        <label for="end_date">Lease end date</label>
+        <input type="date" id="end_date" name="end_date" required>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="monthly_rent">Monthly rent</label>
+        <input type="number" step="0.01" id="monthly_rent" name="monthly_rent" required>
+      </div>
+      <div class="field">
+        <label for="deposit">Security deposit</label>
+        <input type="number" step="0.01" id="deposit" name="deposit">
+      </div>
+    </div>
+    <div class="field">
+      <label for="due_day">Rent due day of month</label>
+      <input type="number" min="1" max="31" id="due_day" name="due_day" value="1">
+    </div>
+    <div class="field">
+      <label for="lease_document">Signed lease PDF (max 20 MB)</label>
+      <input type="file" id="lease_document" name="lease_document" accept="application/pdf" required>
+    </div>
+    <button class="btn" type="submit">Save &amp; Activate Lease</button>
+    <a href="{{ url_for('tenants.detail', tenant_id=tenant.id) }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

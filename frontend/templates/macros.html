@@ -1,0 +1,14 @@
+{% macro status_badge(status) %}
+{% set colors = {
+  'ACTIVE': 'green', 'OCCUPIED': 'green', 'SENT': 'green', 'COMPLETED': 'green', 'CLOSED': 'gray',
+  'VACANT': 'blue', 'SUBMITTED': 'blue', 'ASSIGNED': 'blue', 'PENDING': 'yellow', 'IN_PROGRESS': 'yellow',
+  'ARCHIVED': 'gray', 'TERMINATED': 'gray', 'EXPIRED': 'gray', 'FAILED': 'red', 'UNDER_MAINTENANCE': 'red',
+  'ACKNOWLEDGED': 'blue'
+} %}
+<span class="badge badge-{{ colors.get(status, 'gray') }}">{{ status.replace('_', ' ') }}</span>
+{% endmacro %}
+
+{% macro severity_badge(severity) %}
+{% set colors = {'LOW': 'gray', 'MEDIUM': 'blue', 'HIGH': 'yellow', 'EMERGENCY': 'red'} %}
+<span class="badge badge-{{ colors.get(severity, 'gray') }}">{{ severity }}</span>
+{% endmacro %}

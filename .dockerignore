@@ -1,19 +1,15 @@
-_site/
-.sass-cache/
-.jekyll-metadata
-.bundle
-
-# RentalPro (Python/Flask)
 __pycache__/
 *.pyc
 .pytest_cache/
 .coverage
 coverage.xml
 htmlcov/
-*.egg-info/
 venv/
 .venv/
-instance/
+.git/
+node_modules/
+_site/
 uploads/
 *.db
 .env
+tests/

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run test suite with coverage
+        run: pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  docker-smoke-test:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t rentalpro:ci .
+
+      - name: Smoke test the image
+        run: |
+          docker run -d --name rentalpro-ci -p 5000:5000 \
+            -e SECRET_KEY=ci-test-secret \
+            -e DATABASE_URL=sqlite:////app/ci.db \
+            -e SCHEDULER_ENABLED=false \
+            rentalpro:ci
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:5000/health; then
+              echo "App is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not become healthy in time"
+          docker logs rentalpro-ci
+          exit 1

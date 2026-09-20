@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, severity_badge %}
+{% block title %}Maintenance — RentalPro{% endblock %}
+{% block content %}
+<h1>{% if current_user.role == 'MAINTENANCE_STAFF' %}My Work Queue{% else %}Maintenance Requests{% endif %}</h1>
+{% if requests %}
+<div class="card mt-1">
+  <table>
+    <thead><tr><th>Ticket</th><th>Title</th><th>Unit</th><th>Severity</th><th>Status</th><th>Assigned</th></tr></thead>
+    <tbody>
+    {% for req in requests %}
+      <tr>
+        <td><a href="{{ url_for('maintenance.detail', request_id=req.id) }}">{{ req.ticket_number }}</a></td>
+        <td>{{ req.title }}</td>
+        <td>{{ req.unit.unit_code }}</td>
+        <td>{{ severity_badge(req.severity) }}</td>
+        <td>{{ status_badge(req.status) }}{% if req.is_overdue %} <span class="badge badge-red">Overdue</span>{% endif %}</td>
+        <td>{{ req.assignee.full_name if req.assignee else "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state"><p>No maintenance requests.</p></div>
+{% endif %}
+{% endblock %}
