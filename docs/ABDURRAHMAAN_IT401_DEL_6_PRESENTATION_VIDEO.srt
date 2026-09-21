@@ -1,6 +1,6 @@
 1
 00:00:00,000 --> 00:00:32,400
-Good [morning/afternoon]. My name is [Your Name], and today I'm presenting RentalPro, a Digital Rental Management System built as my IT401 capstone project. Over the next few minutes I'll walk through the problem this system solves, how it was designed and built, and the results of testing it — including a live demo of the working application. All five project deliverables — requirements, design, the working prototype, the full project report, and 100% feature completion — are finished, tested, and documented.
+Good [morning/afternoon]. My name is Abdurrahmaan Ali, and today I'm presenting RentalPro, a Digital Rental Management System built as my IT401 capstone project. Over the next few minutes I'll walk through the problem this system solves, how it was designed and built, and the results of testing it — including a live demo of the working application. All five project deliverables — requirements, design, the working prototype, the full project report, and 100% feature completion — are finished, tested, and documented.
 
 2
 00:00:32,400 --> 00:01:12,800
