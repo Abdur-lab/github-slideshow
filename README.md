@@ -9,6 +9,18 @@ gap against the SRS: unit editing, property/unit/maintenance photo
 uploads, tenant blacklisting, admin user & role management, staff account
 self-service, per-property late fees, and CSV/Excel export.
 
+## Deliverable Status
+
+| # | Deliverable | Status |
+|---|---|---|
+| 1 | Software Requirements Specification | ✅ Complete |
+| 2 | UML & Database Design | ✅ Complete |
+| 3 | Working prototype application | ✅ Complete |
+| 4 | Complete project report (7 chapters + 2 appendices) | ✅ Complete |
+| 5 | Fully-developed application — 100% of SRS features implemented and tested | ✅ **Complete** |
+
+See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage.
+
 ## Technology Stack
 
 | Layer | Choice |
@@ -149,6 +161,9 @@ of month-end, where day-of-month clipping (e.g. a due day of 31 landing in
 February) could shift the exact alert date being asserted by a day.
 
 ## Deliverable 5 — Feature Completion
+
+**Status: ✅ Complete — 100% of the SRS's functional requirements are
+implemented and covered by an automated test.**
 
 Deliverable 5 closed every gap between Deliverable 3's initial implementation
 and 100% of the SRS's functional requirements:
