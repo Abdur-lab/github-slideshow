@@ -1,3 +1,4 @@
+from backend.routes.admin import bp as admin_bp
 from backend.routes.api import bp as api_bp
 from backend.routes.auth import bp as auth_bp
 from backend.routes.dashboard import bp as dashboard_bp
@@ -18,4 +19,5 @@ ALL_BLUEPRINTS = (
     maintenance_bp,
     reports_bp,
     api_bp,
+    admin_bp,
 )

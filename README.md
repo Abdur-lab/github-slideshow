@@ -1,10 +1,13 @@
 # RentalPro — Digital Rental Management System
 
-IT Capstone project (RentalPro): a Flask application implementing the 25 use
-cases from the Software Requirements Specification (Deliverable 1) and the
-UML & Database Design (Deliverable 2) — property listing, tenant records,
-rent tracking, and maintenance requests, across five roles (Property Owner,
-Property Manager, Tenant, Maintenance Staff, Admin).
+IT Capstone project (RentalPro): a Flask application implementing 100% of
+the functional requirements from the Software Requirements Specification
+(Deliverable 1) — property listing, tenant records, rent tracking, and
+maintenance requests, across five roles (Property Owner, Property Manager,
+Tenant, Maintenance Staff, Admin). Deliverable 5 closed every remaining
+gap against the SRS: unit editing, property/unit/maintenance photo
+uploads, tenant blacklisting, admin user & role management, staff account
+self-service, per-property late fees, and CSV/Excel export.
 
 ## Technology Stack
 
@@ -120,6 +123,7 @@ checkout, so the whole app is exercisable offline.
 
 | Email | Password | Role |
 |---|---|---|
+| admin@rentalpro.com | demo123 | ADMIN — user & role management, bypasses ownership checks |
 | owner@rentalpro.com | demo123 | PROPERTY_OWNER — full management access |
 | manager@rentalpro.com | demo123 | PROPERTY_MANAGER — management (no property creation) |
 | tenant1@email.com | demo123 | TENANT — self-service portal only |
@@ -139,10 +143,33 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 93 tests, 0 failures, 77% statement coverage across
+**Current results:** 124 tests, 0 failures, 79% statement coverage across
 `backend/` (`pytest --cov=backend`). Two tests self-skip within a few days
 of month-end, where day-of-month clipping (e.g. a due day of 31 landing in
 February) could shift the exact alert date being asserted by a day.
+
+## Deliverable 5 — Feature Completion
+
+Deliverable 5 closed every gap between Deliverable 3's initial implementation
+and 100% of the SRS's functional requirements:
+
+| Gap closed | FR / UC | Where |
+|---|---|---|
+| Edit an existing unit's details and status | FR-005, FR-004 | `/properties/<id>/units/<id>/edit` |
+| Property photos (up to 10) and unit photos (up to 5) | FR-003 | `/properties/<id>/edit`, unit edit form |
+| Maintenance request photos (submission + completion, up to 3 each) | FR-028, UC-20 | `/maintenance/add`, `/maintenance/<id>/update` |
+| Tenant ID document upload | UC-07 | `/tenants/add` |
+| Lease document download (management and the tenant themselves) | UC-10 | `/tenants/<id>/lease-document/<lease_id>` |
+| Blacklist / unblacklist a tenant, blocking future leases | FR-016 | `/tenants/<id>/blacklist` |
+| Admin user & role management, with an "at least one active Owner" guard | UC-02 | `/admin/users` |
+| Staff account self-service creation (Owner/Manager/Admin) | FR-044 | `/admin/staff/add` |
+| Configurable per-property late fees (fixed or percentage), applied once a lease is overdue | FR-022 | `Property.late_fee_type/late_fee_amount`, `Lease.late_fee_due()` |
+| CSV rent-history export | UC-17 | `/rent/<id>/history.csv` |
+| Excel (.xlsx) report export | FR-043, UC-25 | `/reports/export.xlsx` |
+
+All of the above ship with photo/document upload validation (magic-byte
+checks reused from the existing PDF validator, extended to JPEG/PNG) and
+are covered by `tests/test_deliverable5.py` (31 tests).
 
 ## Security Controls
 

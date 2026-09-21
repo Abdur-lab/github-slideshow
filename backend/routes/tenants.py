@@ -1,16 +1,17 @@
-import os
 import secrets
 from datetime import date
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
-from werkzeug.utils import secure_filename
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
 from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_TENANT, Lease, PasswordReset, Property, Tenant, Unit, User
-from backend.security import assert_owner, audit_log, role_required, validate, validate_upload
+from backend.security import assert_owner, assert_tenant_self, audit_log, current_user, role_required, validate, validate_upload
 from backend.services.notifications import send_email, send_email_raw
+from backend.services.storage import save_upload, serve_upload
 
 MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
+IMAGE_OR_PDF = (".jpg", ".jpeg", ".png", ".pdf")
+MAX_ID_DOC_BYTES = 10 * 1024 * 1024
 
 bp = Blueprint("tenants", __name__, url_prefix="/tenants")
 
@@ -32,6 +33,7 @@ def add():
         email = request.form.get("email", "").strip().lower()
         phone = request.form.get("phone", "").strip()
         emergency_contact = request.form.get("emergency_contact", "").strip()
+        id_document = request.files.get("id_document")
 
         errors = []
         if not full_name:
@@ -44,6 +46,8 @@ def add():
             errors.append("Email address is invalid.")
         if email and User.query.filter_by(email=email).first():
             errors.append("A user with this email already exists.")
+        if id_document and id_document.filename and not validate_upload(id_document, allowed_ext=IMAGE_OR_PDF, max_bytes=MAX_ID_DOC_BYTES):
+            errors.append("ID document must be a valid PDF, JPG, or PNG under 10 MB.")
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -57,6 +61,8 @@ def add():
         db.session.add(user)
         db.session.flush()
         tenant = Tenant(user_id=user.id, national_id=national_id, phone=phone, emergency_contact=emergency_contact)
+        if id_document and id_document.filename:
+            tenant.id_document_path = save_upload(id_document, f"tenants/{user.id}")
         db.session.add(tenant)
         db.session.commit()
         audit_log("tenant_created", "Tenant", tenant.id, new_value={"national_id": national_id})
@@ -137,6 +143,8 @@ def upload_lease(tenant_id):
         lease_file = request.files.get("lease_document")
 
         errors = []
+        if tenant.is_blacklisted:
+            errors.append(f"This tenant is blacklisted ({tenant.blacklist_reason or 'no reason on file'}) and cannot be given a new lease.")
         unit = db.session.get(Unit, unit_id) if unit_id else None
         if not unit:
             errors.append("Please select a unit.")
@@ -160,12 +168,7 @@ def upload_lease(tenant_id):
                 "tenants/upload_lease.html", tenant=tenant, vacant_units=vacant_units, preselect_unit_id=unit_id, form=request.form
             )
 
-        upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "leases")
-        os.makedirs(upload_dir, exist_ok=True)
-        filename = secure_filename(f"{tenant.id}-{secrets.token_hex(6)}.pdf")
-        path = os.path.join(upload_dir, filename)
-        lease_file.stream.seek(0)
-        lease_file.save(path)
+        relative_path = save_upload(lease_file, "leases")
 
         lease = Lease(
             unit_id=unit.id,
@@ -175,7 +178,7 @@ def upload_lease(tenant_id):
             monthly_rent=float(monthly_rent),
             deposit=float(deposit or 0),
             due_day=max(1, min(31, int(due_day or 1))),
-            document_path=path,
+            document_path=relative_path,
         )
         db.session.add(lease)
         unit.status = "OCCUPIED"
@@ -190,3 +193,52 @@ def upload_lease(tenant_id):
         return redirect(url_for("tenants.detail", tenant_id=tenant.id))
 
     return render_template("tenants/upload_lease.html", tenant=tenant, vacant_units=vacant_units, preselect_unit_id=preselect_unit_id, form={})
+
+
+@bp.route("/<tenant_id>/blacklist", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def blacklist(tenant_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    reason = request.form.get("reason", "").strip()
+    if not reason:
+        flash("A reason is required to blacklist a tenant.", "error")
+        return redirect(url_for("tenants.detail", tenant_id=tenant.id))
+    tenant.is_blacklisted = True
+    tenant.blacklist_reason = reason
+    db.session.commit()
+    audit_log("tenant_blacklisted", "Tenant", tenant.id, new_value={"reason": reason})
+    flash("Tenant flagged as blacklisted.", "success")
+    return redirect(url_for("tenants.detail", tenant_id=tenant.id))
+
+
+@bp.route("/<tenant_id>/unblacklist", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def unblacklist(tenant_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant.is_blacklisted = False
+    tenant.blacklist_reason = None
+    db.session.commit()
+    audit_log("tenant_unblacklisted", "Tenant", tenant.id)
+    flash("Blacklist flag removed.", "success")
+    return redirect(url_for("tenants.detail", tenant_id=tenant.id))
+
+
+@bp.route("/<tenant_id>/id-document")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def id_document(tenant_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    assert_tenant_self(tenant.id)
+    if not tenant.id_document_path:
+        abort(404)
+    return serve_upload(tenant.id_document_path)
+
+
+@bp.route("/<tenant_id>/lease-document/<lease_id>")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def lease_document(tenant_id, lease_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    assert_tenant_self(tenant.id)
+    lease = Lease.query.filter_by(id=lease_id, tenant_id=tenant.id).first_or_404()
+    if not lease.document_path:
+        abort(404)
+    return serve_upload(lease.document_path)

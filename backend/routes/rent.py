@@ -1,10 +1,12 @@
+import csv
+import io
 from datetime import date
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Lease, PAYMENT_METHODS, RentPayment, Tenant
-from backend.security import audit_log, current_user, role_required, validate
+from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_TENANT, Lease, PAYMENT_METHODS, RentPayment, Tenant
+from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
 from backend.services.notifications import send_email
 from backend.services.pdf import render_rent_statement_pdf
 
@@ -81,6 +83,26 @@ def history(lease_id):
     lease = Lease.query.get_or_404(lease_id)
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
     return render_template("rent/history.html", lease=lease, payments=payments)
+
+
+@bp.route("/<lease_id>/history.csv")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def history_csv(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+    payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Date", "Type", "Amount", "Method", "Receipt Number", "Notes"])
+    for p in payments:
+        writer.writerow([p.paid_at.date().isoformat(), "Payment", f"{p.amount:.2f}", p.method, p.receipt_number, p.notes or ""])
+    audit_log("rent_history_exported", "Lease", lease.id, new_value={"format": "csv"})
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=rent-history-{lease.id[:8]}.csv"},
+    )
 
 
 @bp.route("/<lease_id>/statement")

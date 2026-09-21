@@ -16,13 +16,29 @@ from backend.models import (
     MaintenanceRequest,
     User,
 )
-from backend.security import audit_log, current_user, role_required, validate
+from backend.security import audit_log, current_user, role_required, validate, validate_upload
 from backend.services.notifications import send_email, send_sms
+from backend.services.storage import save_uploads, serve_upload
 
 MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 MAX_OPEN_REQUESTS_PER_TENANT = 5
+MAX_REQUEST_PHOTOS = 3
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 bp = Blueprint("maintenance", __name__, url_prefix="/maintenance")
+
+
+def _valid_photos(files, max_count):
+    files = [f for f in files if f and f.filename][:max_count]
+    errors = []
+    valid = []
+    for f in files:
+        if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
+            valid.append(f)
+        else:
+            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not attached.')
+    return valid, errors
 
 
 @bp.route("")
@@ -67,6 +83,9 @@ def add():
             errors.append("Title is required.")
         if not description:
             errors.append("Description is required.")
+        photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_REQUEST_PHOTOS)
+        for e in photo_errors:
+            flash(e, "warning")
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -84,6 +103,9 @@ def add():
             severity=severity if severity in MAINT_SEVERITIES else "MEDIUM",
         )
         db.session.add(req)
+        db.session.flush()
+        if photos:
+            req.photo_paths = save_uploads(photos, f"maintenance/{req.id}", MAX_REQUEST_PHOTOS)
         db.session.commit()
         audit_log("maintenance_submitted", "MaintenanceRequest", req.id, new_value={"ticket": req.ticket_number})
 
@@ -161,6 +183,11 @@ def update(request_id):
         req.status = "IN_PROGRESS" if action == "start" else "COMPLETED"
         if action == "complete":
             req.completed_at = datetime.utcnow()
+            photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_REQUEST_PHOTOS)
+            for e in photo_errors:
+                flash(e, "warning")
+            if photos:
+                req.completion_photo_paths = save_uploads(photos, f"maintenance/{req.id}/completion", MAX_REQUEST_PHOTOS)
         db.session.commit()
         audit_log("maintenance_status_update", "MaintenanceRequest", req.id, new_value={"status": req.status})
         send_email(req.tenant.user, "Maintenance request updated", f"Ticket {req.ticket_number} is now {req.status}.")
@@ -223,3 +250,18 @@ def add_cost(request_id):
     audit_log("maintenance_cost_logged", "MaintenanceCost", cost.id, new_value={"amount": float(amount)})
     flash("Cost logged.", "success")
     return redirect(url_for("maintenance.detail", request_id=req.id))
+
+
+@bp.route("/<request_id>/photos/<path:relpath>")
+@role_required(*MANAGEMENT_ROLES, ROLE_STAFF, ROLE_TENANT)
+def photo(request_id, relpath):
+    req = MaintenanceRequest.query.get_or_404(request_id)
+    if not _can_view(req, current_user()):
+        abort(403)
+    full = f"maintenance/{request_id}/{relpath}"
+    full_completion = f"maintenance/{request_id}/completion/{relpath}"
+    if full in (req.photo_paths or []):
+        return serve_upload(full)
+    if full_completion in (req.completion_photo_paths or []):
+        return serve_upload(full_completion)
+    abort(404)

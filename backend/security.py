@@ -139,21 +139,39 @@ def validate(kind: str, value) -> bool:
     raise ValueError(f"Unknown validation kind: {kind}")
 
 
+IMAGE_MAGIC = {
+    b"\xff\xd8\xff": (".jpg", ".jpeg"),
+    b"\x89PNG\r\n\x1a\n": (".png",),
+}
+
+
 def validate_upload(file_storage, allowed_ext=(".pdf",), max_bytes: int = 20 * 1024 * 1024) -> bool:
     """Rejects missing files, wrong extensions, oversized files, and content
-    that doesn't match its claimed type (checked via magic bytes for PDF)."""
+    that doesn't match its claimed type (checked via magic bytes for PDF
+    and, when an image extension is allowed, for JPEG/PNG too)."""
     if file_storage is None or not getattr(file_storage, "filename", None):
         return False
     filename = file_storage.filename
     ext = os.path.splitext(filename)[1].lower()
     if ext not in allowed_ext:
         return False
-    head = file_storage.stream.read(5)
+
+    file_storage.stream.seek(0, os.SEEK_END)
+    size = file_storage.stream.tell()
+    file_storage.stream.seek(0)
+    if size == 0 or size > max_bytes:
+        return False
+
+    head = file_storage.stream.read(16)
     file_storage.stream.seek(0)
     if not head:
         return False
-    if ext == ".pdf" and head[:5] != b"%PDF-":
-        return False
+    if ext == ".pdf":
+        return head[:5] == b"%PDF-"
+    if ext in (".jpg", ".jpeg"):
+        return head[:3] == b"\xff\xd8\xff"
+    if ext == ".png":
+        return head[:8] == b"\x89PNG\r\n\x1a\n"
     return True
 
 

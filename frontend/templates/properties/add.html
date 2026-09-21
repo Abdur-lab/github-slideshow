@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Add New Property</h1>
 <div class="card" style="max-width:600px">
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
       <label for="name">Property name</label>
@@ -38,6 +38,22 @@
     <div class="field">
       <label for="description">Description</label>
       <textarea id="description" name="description">{{ form.get('description', '') }}</textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="late_fee_type">Late fee</label>
+        <select id="late_fee_type" name="late_fee_type">
+          {% for t in late_fee_types %}<option value="{{ t }}" {% if form.get('late_fee_type', 'NONE') == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="late_fee_amount">Amount (fixed) or % (percentage)</label>
+        <input type="number" step="0.01" id="late_fee_amount" name="late_fee_amount" value="{{ form.get('late_fee_amount', '') }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="photos">Property photos (up to 10, JPG/PNG, max 5 MB each)</label>
+      <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
     </div>
     <button class="btn" type="submit">Save Property</button>
     <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">Cancel</a>

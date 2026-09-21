@@ -4,6 +4,7 @@ from flask import Blueprint, Response, render_template, request
 
 from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Property
 from backend.security import assert_owner, audit_log, current_user, role_required
+from backend.services.excel import render_portfolio_report_xlsx
 from backend.services.pdf import render_property_report_pdf
 from backend.services.reports import portfolio_performance, property_performance
 
@@ -60,3 +61,27 @@ def export_pdf():
         filename = "report-portfolio.pdf"
     audit_log("report_exported", "Property", property_id, new_value={"format": "pdf"})
     return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@bp.route("/export.xlsx")
+@role_required(*MANAGEMENT_ROLES)
+def export_xlsx():
+    user = current_user()
+    property_id = request.args.get("property_id")
+    if property_id:
+        assert_owner(property_id)
+        prop = Property.query.get_or_404(property_id)
+        prop_summary = property_performance(prop)
+        summary = {**prop_summary, "properties": [prop_summary]}
+        filename = f"report-{prop.property_code}.xlsx"
+    else:
+        properties = _visible_properties(user)
+        summary = portfolio_performance(properties)
+        filename = "report-portfolio.xlsx"
+    xlsx_bytes = render_portfolio_report_xlsx(summary)
+    audit_log("report_exported", "Property", property_id, new_value={"format": "xlsx"})
+    return Response(
+        xlsx_bytes,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

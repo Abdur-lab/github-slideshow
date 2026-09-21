@@ -20,6 +20,10 @@
         <a href="{{ url_for('rent.index') }}">Rent Tracker</a>
         <a href="{{ url_for('maintenance.index') }}">Maintenance</a>
         <a href="{{ url_for('reports.index') }}">Reports</a>
+        <a href="{{ url_for('admin.add_staff') }}">+ Add Staff</a>
+        {% if current_user.role == 'ADMIN' %}
+        <a href="{{ url_for('admin.users') }}">Manage Users</a>
+        {% endif %}
       {% elif current_user.role == 'MAINTENANCE_STAFF' %}
         <a href="{{ url_for('maintenance.index') }}">My Work Queue</a>
       {% elif current_user.role == 'TENANT' %}

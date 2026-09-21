@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Submit Maintenance Request</h1>
 <div class="card" style="max-width:600px">
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
       <label for="title">Title</label>
@@ -26,6 +26,10 @@
     <div class="field">
       <label for="description">Description</label>
       <textarea id="description" name="description" required>{{ form.get('description', '') }}</textarea>
+    </div>
+    <div class="field">
+      <label for="photos">Photos (optional, up to 3, JPG/PNG, max 5 MB each)</label>
+      <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
     </div>
     <button class="btn" type="submit">Submit Request</button>
     <a href="{{ url_for('portal.index') }}" class="btn btn-secondary">Cancel</a>

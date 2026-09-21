@@ -8,6 +8,7 @@
     <p class="text-muted">{{ property.property_code }} &middot; {{ property.address }}, {{ property.city }}, {{ property.country }}</p>
   </div>
   <div>
+    <a href="{{ url_for('properties.edit', property_id=property.id) }}" class="btn btn-secondary">Edit</a>
     <a href="{{ url_for('properties.add_unit', property_id=property.id) }}" class="btn">+ Add Unit</a>
     {% if property.status == 'ACTIVE' %}
     <form method="post" action="{{ url_for('properties.archive', property_id=property.id) }}" style="display:inline" onsubmit="return confirm('Archive this property?');">
@@ -25,6 +26,17 @@
   <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ property.occupancy_rate }}%</div></div>
 </div>
 
+{% if property.photo_paths %}
+<div class="card">
+  <h3>Photos</h3>
+  <div class="grid grid-4">
+    {% for p in property.photo_paths %}
+      <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="card">
   <h3>Units</h3>
   {% if units %}
@@ -38,6 +50,7 @@
         <td>{{ property.currency }} {{ "%.2f"|format(unit.monthly_rent) }}</td>
         <td>{{ status_badge(unit.status) }}</td>
         <td>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.edit_unit', property_id=property.id, unit_id=unit.id) }}">Edit</a>
           {% if unit.status == 'VACANT' %}
             <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.invite', unit_id=unit.id) }}">Invite Tenant</a>
             <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.add', unit_id=unit.id) }}">Create Tenant Profile</a>

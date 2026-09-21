@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Edit Unit {{ unit.unit_code }} — RentalPro{% endblock %}
+{% block content %}
+<h1>Edit Unit {{ unit.unit_code }}</h1>
+<div class="card" style="max-width:600px">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="floor">Floor</label>
+        <input type="text" id="floor" name="floor" value="{{ unit.floor or '' }}">
+      </div>
+      <div class="field">
+        <label for="type">Type</label>
+        <select id="type" name="type">
+          {% for t in types %}<option value="{{ t }}" {% if unit.type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="size_sqm">Size (sqm)</label>
+        <input type="number" step="0.1" id="size_sqm" name="size_sqm" value="{{ unit.size_sqm or '' }}">
+      </div>
+      <div class="field">
+        <label for="deposit">Security deposit</label>
+        <input type="number" step="0.01" id="deposit" name="deposit" value="{{ unit.deposit }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="monthly_rent">Monthly rent</label>
+      <input type="number" step="0.01" id="monthly_rent" name="monthly_rent" value="{{ unit.monthly_rent }}" required>
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status" {% if unit.active_lease %}disabled{% endif %}>
+        <option value="VACANT" {% if unit.status == 'VACANT' %}selected{% endif %}>Vacant</option>
+        <option value="UNDER_MAINTENANCE" {% if unit.status == 'UNDER_MAINTENANCE' %}selected{% endif %}>Under Maintenance</option>
+        <option value="OCCUPIED" {% if unit.status == 'OCCUPIED' %}selected{% endif %} disabled>Occupied (set automatically by an active lease)</option>
+      </select>
+      {% if unit.active_lease %}<p class="text-muted">Status is locked to Occupied while a lease is active.</p>{% endif %}
+    </div>
+
+    {% if unit.photo_paths %}
+    <div class="field">
+      <label>Current photos ({{ unit.photo_paths|length }}/5)</label>
+      <div class="grid grid-4">
+        {% for p in unit.photo_paths %}
+          <img src="{{ url_for('properties.unit_photo', property_id=property.id, unit_id=unit.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="field">
+      <label for="photos">Add more photos (JPG/PNG, max 5 MB each)</label>
+      <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
+    </div>
+
+    <button class="btn" type="submit">Save Changes</button>
+    <a href="{{ url_for('properties.detail', property_id=property.id) }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

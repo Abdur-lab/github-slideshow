@@ -44,7 +44,7 @@
     {% if current_user.role == 'MAINTENANCE_STAFF' and req.assigned_to == current_user.id and req.status in ('ASSIGNED', 'IN_PROGRESS') %}
     <hr>
     <h4>Update Status</h4>
-    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}">
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field">
         <label for="notes">Work notes</label>
@@ -53,9 +53,33 @@
       {% if req.status == 'ASSIGNED' %}
         <button class="btn" type="submit" name="action" value="start">Mark In Progress</button>
       {% else %}
+        <div class="field">
+          <label for="photos">Completion photos (optional, up to 3)</label>
+          <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
+        </div>
         <button class="btn" type="submit" name="action" value="complete">Mark Completed</button>
       {% endif %}
     </form>
+    {% endif %}
+
+    {% if req.photo_paths or req.completion_photo_paths %}
+    <hr>
+    {% if req.photo_paths %}
+    <h4>Submitted Photos</h4>
+    <div class="grid grid-3">
+      {% for p in req.photo_paths %}
+        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if req.completion_photo_paths %}
+    <h4>Completion Photos</h4>
+    <div class="grid grid-3">
+      {% for p in req.completion_photo_paths %}
+        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+      {% endfor %}
+    </div>
+    {% endif %}
     {% endif %}
 
     {% if current_user.role == 'TENANT' and req.status == 'COMPLETED' %}

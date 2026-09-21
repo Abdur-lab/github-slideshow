@@ -30,6 +30,7 @@ MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
 PROPERTY_TYPES = ("RESIDENTIAL", "COMMERCIAL", "MIXED")
 PROPERTY_STATUSES = ("ACTIVE", "ARCHIVED")
+LATE_FEE_TYPES = ("NONE", "FIXED", "PERCENTAGE")
 
 UNIT_TYPES = ("STUDIO", "1BR", "2BR", "3BR", "SHOP", "OFFICE")
 UNIT_STATUSES = ("VACANT", "OCCUPIED", "UNDER_MAINTENANCE", "ARCHIVED")
@@ -98,9 +99,19 @@ class Property(db.Model):
     description = db.Column(db.Text, nullable=True)
     property_code = db.Column(db.String(20), unique=True, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="ACTIVE")
+    photo_paths = db.Column(db.JSON, nullable=False, default=list)
+    late_fee_type = db.Column(db.String(10), nullable=False, default="NONE")
+    late_fee_amount = db.Column(db.Float, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     units = db.relationship("Unit", backref="property", cascade="all, delete-orphan", lazy="dynamic")
+
+    def late_fee_for(self, monthly_rent: float) -> float:
+        if self.late_fee_type == "FIXED":
+            return round(self.late_fee_amount, 2)
+        if self.late_fee_type == "PERCENTAGE":
+            return round(monthly_rent * (self.late_fee_amount / 100.0), 2)
+        return 0.0
 
     @staticmethod
     def generate_property_code() -> str:
@@ -132,6 +143,7 @@ class Unit(db.Model):
     deposit = db.Column(db.Float, nullable=False, default=0)
     status = db.Column(db.String(20), nullable=False, default="VACANT")
     unit_code = db.Column(db.String(30), unique=True, nullable=False)
+    photo_paths = db.Column(db.JSON, nullable=False, default=list)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     leases = db.relationship("Lease", backref="unit", lazy="dynamic")
@@ -156,6 +168,7 @@ class Tenant(db.Model):
     emergency_contact = db.Column(db.String(200), nullable=True)
     is_blacklisted = db.Column(db.Boolean, nullable=False, default=False)
     blacklist_reason = db.Column(db.String(300), nullable=True)
+    id_document_path = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     leases = db.relationship("Lease", backref="tenant", lazy="dynamic")
@@ -299,13 +312,26 @@ class Lease(db.Model):
         ).scalar()
         return round(float(total or 0.0), 2)
 
+    def late_fee_due(self, as_of: date = None) -> float:
+        """A configured late fee (Property.late_fee_type/late_fee_amount)
+        applies once the current billing period is unpaid past its due
+        date. Defaults to NONE, so this is 0.0 unless a property owner has
+        explicitly configured a fee (Section 5, FR-022)."""
+        as_of = as_of or date.today()
+        current_due = self.current_due_date(as_of)
+        if current_due is None or current_due >= as_of:
+            return 0.0
+        if self.total_due_to_date(as_of) <= self.total_paid:
+            return 0.0
+        return self.unit.property.late_fee_for(self.monthly_rent)
+
     @property
     def balance(self) -> float:
-        return max(0.0, round(self.total_due_to_date() - self.total_paid, 2))
+        return max(0.0, round(self.total_due_to_date() + self.late_fee_due() - self.total_paid, 2))
 
     @property
     def credit(self) -> float:
-        return max(0.0, round(self.total_paid - self.total_due_to_date(), 2))
+        return max(0.0, round(self.total_paid - self.total_due_to_date() - self.late_fee_due(), 2))
 
     @property
     def is_overdue(self) -> bool:
@@ -352,6 +378,8 @@ class MaintenanceRequest(db.Model):
     target_date = db.Column(db.Date, nullable=True)
     escalated = db.Column(db.Boolean, nullable=False, default=False)
     satisfaction_rating = db.Column(db.Integer, nullable=True)
+    photo_paths = db.Column(db.JSON, nullable=False, default=list)
+    completion_photo_paths = db.Column(db.JSON, nullable=False, default=list)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)

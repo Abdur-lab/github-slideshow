@@ -13,6 +13,9 @@
 {% if lease.balance > 0 %}
 <div class="card mt-1"><a class="btn" href="{{ url_for('portal.pay') }}">Pay Rent Now</a></div>
 {% endif %}
+{% if lease.document_path %}
+<div class="card mt-1"><a class="btn btn-secondary" href="{{ url_for('tenants.lease_document', tenant_id=tenant.id, lease_id=lease.id) }}" target="_blank">Download My Lease PDF</a></div>
+{% endif %}
 {% else %}
 <div class="empty-state"><p>You do not have an active lease on file. Please contact your property manager.</p></div>
 {% endif %}

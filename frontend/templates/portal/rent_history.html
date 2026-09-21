@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Payment History — RentalPro{% endblock %}
 {% block content %}
-<h1>Payment History</h1>
+<div class="flex-between">
+  <h1>Payment History</h1>
+  {% if payments and lease %}<a class="btn btn-secondary" href="{{ url_for('rent.history_csv', lease_id=lease.id) }}">Export CSV</a>{% endif %}
+</div>
 {% if payments %}
 <div class="card mt-1">
   <table>

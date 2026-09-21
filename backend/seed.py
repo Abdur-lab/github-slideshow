@@ -8,6 +8,7 @@ from backend.models import (
     MaintenanceRequest,
     Property,
     RentPayment,
+    ROLE_ADMIN,
     ROLE_MANAGER,
     ROLE_OWNER,
     ROLE_STAFF,
@@ -27,6 +28,8 @@ def run_seed():
         print("Seed data already present, skipping.")
         return
 
+    admin = User(email="admin@rentalpro.com", first_name="Amir", last_name="Admin", role=ROLE_ADMIN)
+    admin.set_password(DEMO_PASSWORD)
     owner = User(email="owner@rentalpro.com", first_name="Olivia", last_name="Owner", role=ROLE_OWNER)
     owner.set_password(DEMO_PASSWORD)
     manager = User(email="manager@rentalpro.com", first_name="Marco", last_name="Manager", role=ROLE_MANAGER)
@@ -35,7 +38,7 @@ def run_seed():
     staff.set_password(DEMO_PASSWORD)
     tenant_user = User(email="tenant1@email.com", first_name="Tara", last_name="Tenant", role=ROLE_TENANT)
     tenant_user.set_password(DEMO_PASSWORD)
-    db.session.add_all([owner, manager, staff, tenant_user])
+    db.session.add_all([admin, owner, manager, staff, tenant_user])
     db.session.flush()
 
     tenant = Tenant(user_id=tenant_user.id, national_id="ID-100200300", phone="+1-555-0100", emergency_contact="John Tenant +1-555-0101")
@@ -134,4 +137,4 @@ def run_seed():
     db.session.add(MaintenanceCost(request_id=request1.id, category="MATERIALS", amount=25.0, recorded_by=manager.id, description="Replacement washer"))
 
     db.session.commit()
-    print("Seeded: 4 users, 2 properties, 6 units, 1 lease, 1 payment, 1 maintenance request.")
+    print("Seeded: 5 users, 2 properties, 6 units, 1 lease, 1 payment, 1 maintenance request.")
