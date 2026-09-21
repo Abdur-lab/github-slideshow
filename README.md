@@ -17,9 +17,10 @@ self-service, per-property late fees, and CSV/Excel export.
 | 2 | UML & Database Design | ✅ Complete |
 | 3 | Working prototype application | ✅ Complete |
 | 4 | Complete project report (7 chapters + 2 appendices) | ✅ Complete |
-| 5 | Fully-developed application — 100% of SRS features implemented and tested | ✅ **Complete** |
+| 5 | Fully-developed application — 100% of SRS features implemented and tested | ✅ Complete |
+| 6 | Project demo video, presentation video, and final capstone report | ✅ **Complete** |
 
-See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage.
+See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage, and `docs/ABDURRAHMAAN_IT401_DEL_6_*` for the Deliverable 6 files (demo video, presentation video + slide deck, and the final report).
 
 ## Technology Stack
 

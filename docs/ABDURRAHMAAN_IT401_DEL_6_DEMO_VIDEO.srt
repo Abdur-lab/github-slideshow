@@ -1,0 +1,155 @@
+1
+00:00:00,522 --> 00:00:03,330
+RentalPro — Digital Rental Management System — Signing in as Property Owner (owner@rentalpro.com)
+
+2
+00:00:03,700 --> 00:00:06,918
+Owner Dashboard — Portfolio-wide occupancy, rent collection, and outstanding balances at a glance.
+
+3
+00:00:07,449 --> 00:00:10,653
+Sunrise Apartments — Four units, RBAC-protected — only this owner and staff with a role grant can see it.
+
+4
+00:00:11,174 --> 00:00:14,379
+Deliverable 5 — Property Photos & Late Fees — Uploading photos and configuring a 5% late fee for overdue rent.
+
+5
+00:00:14,538 --> 00:00:17,746
+Property Updated — Photos attached and a percentage-based late fee now applies once rent goes overdue.
+
+6
+00:00:18,269 --> 00:00:21,473
+Add a Unit — A new studio unit — with unit photos.
+
+7
+00:00:21,645 --> 00:00:24,849
+Unit 105 Created — Auto-generated unit code, starts Vacant, ready to onboard a tenant.
+
+8
+00:00:25,367 --> 00:00:28,571
+Onboard a Tenant — Creating a tenant profile directly, with an ID document upload (Deliverable 5).
+
+9
+00:00:28,935 --> 00:00:32,143
+Upload Lease & Activate Tenancy — A signed lease PDF (magic-byte validated) moves the unit to Occupied.
+
+10
+00:00:32,339 --> 00:00:35,545
+Lease Active — Unit 102 is now Occupied — Maria Santos is the tenant of record.
+
+11
+00:00:35,545 --> 00:00:38,549
+Deliverable 5 — Tenant Blacklisting — Flagging a tenant blocks any future lease until the flag is removed.
+
+12
+00:00:38,663 --> 00:00:41,271
+Tenant Blacklisted — A new lease for this tenant is now blocked until the flag is removed.
+
+13
+00:00:41,336 --> 00:00:43,744
+Flag Removed — Blacklisting never touches an existing active lease — only future ones.
+
+14
+00:00:44,277 --> 00:00:47,482
+Rent Tracker — Every active lease, sorted by outstanding balance.
+
+15
+00:00:48,008 --> 00:00:51,213
+Record a Rent Payment — Balance recalculates immediately, including any configured late fee.
+
+16
+00:00:51,339 --> 00:00:54,545
+Payment Recorded — A receipt number is generated and the tenant is emailed a receipt.
+
+17
+00:00:55,068 --> 00:00:58,272
+Rent Statement — Full charge and payment history for this lease, downloadable as PDF.
+
+18
+00:00:58,791 --> 00:01:01,996
+Payment History — Deliverable 5 adds a one-click CSV export of this same history.
+
+19
+00:01:02,531 --> 00:01:05,735
+Property Performance Report — Occupancy, collection rate, and maintenance cost — portfolio-wide or per property.
+
+20
+00:01:05,796 --> 00:01:08,398
+Deliverable 5 — Excel Export — A two-sheet .xlsx workbook: portfolio summary and per-property breakdown.
+
+21
+00:01:09,434 --> 00:01:12,238
+RentalPro — Digital Rental Management System — Signing in as Tenant (tenant1@email.com)
+
+22
+00:01:13,051 --> 00:01:16,255
+Submit a Maintenance Request — Tenants can attach up to 3 photos of the issue (Deliverable 5).
+
+23
+00:01:16,438 --> 00:01:19,647
+Ticket Submitted — The tenant and property owner are both notified immediately.
+
+24
+00:01:20,684 --> 00:01:23,489
+RentalPro — Digital Rental Management System — Signing in as Property Owner (owner@rentalpro.com)
+
+25
+00:01:24,291 --> 00:01:27,495
+Maintenance Work Queue — Every open ticket across the portfolio — newest first, so the tenant’s new ticket is at the top.
+
+26
+00:01:28,081 --> 00:01:31,284
+Assign to Staff — Choosing a staff member and a target completion date.
+
+27
+00:01:31,417 --> 00:01:34,638
+Assigned — Status moves to ASSIGNED; the staff member and tenant are both notified.
+
+28
+00:01:35,668 --> 00:01:38,473
+RentalPro — Digital Rental Management System — Signing in as Maintenance Staff (staff@rentalpro.com)
+
+29
+00:01:39,274 --> 00:01:42,478
+Maintenance Staff — My Work Queue — Staff see only tickets assigned to them.
+
+30
+00:01:42,588 --> 00:01:44,809
+In Progress — Work has started on the ticket.
+
+31
+00:01:44,839 --> 00:01:48,041
+Mark Completed — A completion photo is attached alongside the work notes (Deliverable 5).
+
+32
+00:01:49,177 --> 00:01:51,982
+RentalPro — Digital Rental Management System — Signing in as Tenant (tenant1@email.com)
+
+33
+00:01:52,791 --> 00:01:55,996
+Review Completed Work — The tenant sees the completion photo and can rate the work.
+
+34
+00:01:56,109 --> 00:01:58,718
+Ticket Closed — Full lifecycle: Submitted → Assigned → In Progress → Completed → Closed.
+
+35
+00:01:59,749 --> 00:02:02,554
+RentalPro — Digital Rental Management System — Signing in as Administrator (admin@rentalpro.com)
+
+36
+00:02:03,362 --> 00:02:06,567
+Deliverable 5 — Admin User Management — Every account, its role, and active status — one console.
+
+37
+00:02:07,086 --> 00:02:10,290
+Add a Staff Account — Self-service account creation for a new Maintenance Staff member.
+
+38
+00:02:10,609 --> 00:02:13,217
+Staff Account Created — A temporary password is generated and emailed to the new account.
+
+39
+00:02:14,263 --> 00:02:17,467
+RentalPro — IT401 Capstone — Deliverables 1–5 complete. Thank you.
