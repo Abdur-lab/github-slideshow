@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date
+from datetime import date, timedelta
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
@@ -119,15 +119,82 @@ def history_csv(lease_id):
     )
 
 
+def _parse_period(args):
+    """Reads optional start/end query params for a statement period.
+    Returns (period_start, period_end, error) — error is a user-facing
+    message when the params are present but invalid, in which case the
+    caller should fall back to the unfiltered, all-time statement."""
+    start_raw = args.get("start")
+    end_raw = args.get("end")
+    if not start_raw and not end_raw:
+        return None, None, None
+    if not (validate("date", start_raw) and validate("date", end_raw)):
+        return None, None, "Statement period dates are invalid."
+    period_start = date.fromisoformat(start_raw)
+    period_end = date.fromisoformat(end_raw)
+    if period_end < period_start:
+        return None, None, "Statement end date must be on or after the start date."
+    return period_start, period_end, None
+
+
+def _period_totals(lease, period_start, period_end):
+    """Opening/closing balance and period activity for a lease over
+    [period_start, period_end], decomposing the same additive terms
+    Lease.balance uses (total_due_to_date + charges - payments) into an
+    'up to the day before the period' opening balance and an 'in period'
+    slice, so a full-lease-history period always ties out to lease.balance
+    (late fees are a point-in-time concept and, as on the all-time
+    statement, are not broken out as a line item here)."""
+    charges_before = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at < period_start
+    ).scalar()
+    payments_before = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id, RentPayment.paid_at < period_start
+    ).scalar()
+    opening_balance = round(
+        lease.total_due_to_date(period_start - timedelta(days=1)) + float(charges_before or 0.0) - float(payments_before or 0.0), 2
+    )
+    rent_in_period = round(lease.total_due_to_date(period_end) - lease.total_due_to_date(period_start - timedelta(days=1)), 2)
+    charges_in_period = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at >= period_start, LeaseCharge.charged_at <= period_end
+    ).scalar()
+    payments_in_period = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id, RentPayment.paid_at >= period_start, RentPayment.paid_at <= period_end
+    ).scalar()
+    charges_in_period = round(float(charges_in_period or 0.0), 2)
+    payments_in_period = round(float(payments_in_period or 0.0), 2)
+    closing_balance = round(opening_balance + rent_in_period + charges_in_period - payments_in_period, 2)
+    return {
+        "opening_balance": opening_balance,
+        "rent_in_period": rent_in_period,
+        "charges_in_period": charges_in_period,
+        "payments_in_period": payments_in_period,
+        "closing_balance": closing_balance,
+    }
+
+
 @bp.route("/<lease_id>/statement")
-@role_required(*MANAGEMENT_ROLES)
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def statement(lease_id):
     lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+
+    period_start, period_end, period_error = _parse_period(request.args)
+    if period_error:
+        flash(period_error, "error")
+
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
     charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
     meter_readings = lease.unit.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).limit(10).all()
     rent_revisions = lease.rent_revisions.order_by(RentRevision.effective_date.desc()).all()
     invoices = lease.invoices.order_by(RentInvoice.period_due_date.desc()).limit(12).all()
+
+    period_totals = None
+    if period_start:
+        payments = [p for p in payments if period_start <= p.paid_at.date() <= period_end]
+        charges = [c for c in charges if period_start <= c.charged_at <= period_end]
+        period_totals = _period_totals(lease, period_start, period_end)
+
     return render_template(
         "rent/statement.html",
         lease=lease,
@@ -138,6 +205,9 @@ def statement(lease_id):
         rent_revisions=rent_revisions,
         invoices=invoices,
         today=date.today(),
+        period_start=period_start,
+        period_end=period_end,
+        period_totals=period_totals,
     )
 
 
@@ -308,12 +378,29 @@ def revise_rent(lease_id):
 
 
 @bp.route("/<lease_id>/statement.pdf")
-@role_required(*MANAGEMENT_ROLES)
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def statement_pdf(lease_id):
     lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+
+    period_start, period_end, _period_error = _parse_period(request.args)
     payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
     charges = lease.charges.order_by(LeaseCharge.charged_at.asc()).all()
-    pdf_bytes = render_rent_statement_pdf(lease, payments, current_user().full_name, charges=charges)
+    period_totals = None
+    if period_start:
+        payments = [p for p in payments if period_start <= p.paid_at.date() <= period_end]
+        charges = [c for c in charges if period_start <= c.charged_at <= period_end]
+        period_totals = _period_totals(lease, period_start, period_end)
+
+    pdf_bytes = render_rent_statement_pdf(
+        lease,
+        payments,
+        current_user().full_name,
+        charges=charges,
+        period_start=period_start,
+        period_end=period_end,
+        period_totals=period_totals,
+    )
     audit_log("rent_statement_exported", "Lease", lease.id)
     return Response(
         pdf_bytes,
