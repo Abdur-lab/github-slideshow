@@ -1,4 +1,4 @@
-"""The four APScheduler background jobs (UC-11, UC-14, UC-15, UC-23).
+"""The five APScheduler background jobs (UC-11, UC-14, auto billing, UC-15, UC-23).
 
 Each job assumes it is called from within an active Flask app context —
 either pushed by the scheduler wrapper in backend/__init__.py for real
@@ -7,7 +7,7 @@ Deliverable 3 describes the test suite invoking these jobs."""
 from datetime import date, datetime, timedelta
 
 from backend.extensions import db
-from backend.models import Lease, MaintenanceRequest, ROLE_MANAGER, ROLE_OWNER, User
+from backend.models import Lease, MaintenanceRequest, RentInvoice, ROLE_MANAGER, ROLE_OWNER, User
 from backend.security import audit_log
 from backend.services.notifications import send_email, send_sms
 
@@ -51,6 +51,37 @@ def job_rent_due_alerts() -> int:
         send_sms(tenant_user, body)
         audit_log("rent_due_alert", "Lease", lease.id, new_value={"days_out": days_out})
         sent += 1
+    return sent
+
+
+def job_auto_bill_rent() -> int:
+    """Automated recurring billing: for each active lease, generates a
+    RentInvoice for every elapsed billing period that hasn't been billed
+    yet, at the rent in effect for that period (Lease.amount_for_period —
+    honouring pro_rata proration and any rent revision), and emails the
+    tenant a notice. Walking from the lease's first due date catches up
+    on any periods missed by a prior run, and the (lease_id,
+    period_due_date) uniqueness on RentInvoice makes re-running the job
+    for an already-billed period a no-op rather than a double charge."""
+    today = date.today()
+    sent = 0
+    for lease in Lease.query.filter_by(status="ACTIVE").all():
+        already_billed = {inv.period_due_date for inv in lease.invoices.all()}
+        for due in lease.due_dates_to_date(today):
+            if due in already_billed:
+                continue
+            amount = lease.amount_for_period(due)
+            invoice = RentInvoice(lease_id=lease.id, period_due_date=due, amount=amount)
+            db.session.add(invoice)
+            tenant_user = lease.tenant.user
+            body = (
+                f"A rent invoice of {amount:.2f} for unit {lease.unit.unit_code} has been generated for the "
+                f"billing period due {due}. Current balance: {lease.balance:.2f}."
+            )
+            send_email(tenant_user, "New rent invoice generated", body)
+            audit_log("rent_auto_billed", "Lease", lease.id, new_value={"period_due_date": str(due), "amount": amount})
+            sent += 1
+    db.session.commit()
     return sent
 
 
@@ -134,6 +165,7 @@ def job_escalate_overdue_maintenance() -> int:
 ALL_JOBS = (
     job_lease_expiry_alerts,
     job_rent_due_alerts,
+    job_auto_bill_rent,
     job_overdue_alerts,
     job_escalate_overdue_maintenance,
 )

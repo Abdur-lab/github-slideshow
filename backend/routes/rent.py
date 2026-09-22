@@ -15,6 +15,7 @@ from backend.models import (
     LeaseCharge,
     MeterReading,
     PAYMENT_METHODS,
+    RentInvoice,
     RentPayment,
     RentRevision,
     Tenant,
@@ -126,6 +127,7 @@ def statement(lease_id):
     charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
     meter_readings = lease.unit.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).limit(10).all()
     rent_revisions = lease.rent_revisions.order_by(RentRevision.effective_date.desc()).all()
+    invoices = lease.invoices.order_by(RentInvoice.period_due_date.desc()).limit(12).all()
     return render_template(
         "rent/statement.html",
         lease=lease,
@@ -134,6 +136,7 @@ def statement(lease_id):
         charge_types=CHARGE_TYPES,
         meter_readings=meter_readings,
         rent_revisions=rent_revisions,
+        invoices=invoices,
         today=date.today(),
     )
 

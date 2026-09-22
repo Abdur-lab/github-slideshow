@@ -253,6 +253,7 @@ class Lease(db.Model):
     payments = db.relationship("RentPayment", backref="lease", lazy="dynamic")
     charges = db.relationship("LeaseCharge", backref="lease", lazy="dynamic")
     rent_revisions = db.relationship("RentRevision", backref="lease", lazy="dynamic")
+    invoices = db.relationship("RentInvoice", backref="lease", lazy="dynamic")
 
     def _clip_day(self, year: int, month: int) -> int:
         last_day = calendar.monthrange(year, month)[1]
@@ -307,6 +308,34 @@ class Lease(db.Model):
     @property
     def current_monthly_rent(self) -> float:
         return self.rent_at(date.today())
+
+    def due_dates_to_date(self, as_of: date = None) -> list:
+        """All billing due dates from first_due_date through as_of,
+        inclusive. Used by the auto-billing job to generate one invoice
+        per elapsed period; kept in lockstep with total_due_to_date's own
+        period-walking loop below."""
+        as_of = as_of or date.today()
+        first_due = self.first_due_date()
+        if as_of < first_due:
+            return []
+        dates = [first_due]
+        due = first_due
+        while True:
+            due = self._advance_month(due)
+            if due > as_of:
+                break
+            dates.append(due)
+        return dates
+
+    def amount_for_period(self, due_date: date) -> float:
+        """Rent billed for a single period ending at due_date: the
+        prorated first-period amount when pro_rata is enabled and this is
+        the lease's first period, otherwise the rent in effect on that
+        date (see rent_at)."""
+        rent = self.rent_at(due_date)
+        if self.pro_rata and due_date == self.first_due_date():
+            return self.first_period_amount(rent)
+        return rent
 
     def total_due_to_date(self, as_of: date = None) -> float:
         """Sum of rent owed for each elapsed billing period (inclusive),
@@ -448,6 +477,28 @@ class RentRevision(db.Model):
     reason = db.Column(db.String(300), nullable=True)
     recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class RentInvoice(db.Model):
+    """A record that the automated billing job generated a bill for one
+    lease's billing period, on that period's due date, at the rent rate
+    in effect that day (Lease.amount_for_period). Makes the scheduler job
+    idempotent — a period already invoiced is never billed twice, even if
+    the job is re-run or catches up on days it missed — and gives owners
+    and tenants a paper trail of exactly what was invoiced and when, even
+    after a later rent revision changes the lease's current rate."""
+
+    __tablename__ = "rent_invoices"
+    __table_args__ = (
+        db.UniqueConstraint("lease_id", "period_due_date", name="uq_invoice_lease_period"),
+        db.Index("ix_invoice_lease_date", "lease_id", "period_due_date"),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    lease_id = db.Column(db.String(36), db.ForeignKey("leases.id"), nullable=False)
+    period_due_date = db.Column(db.Date, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    generated_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
 class MeterReading(db.Model):

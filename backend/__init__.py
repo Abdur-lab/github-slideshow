@@ -72,6 +72,7 @@ def create_app(config_class=Config):
 
 def register_scheduler(app):
     from backend.scheduler_jobs import (
+        job_auto_bill_rent,
         job_escalate_overdue_maintenance,
         job_lease_expiry_alerts,
         job_overdue_alerts,
@@ -88,6 +89,7 @@ def register_scheduler(app):
     if not scheduler.running:
         scheduler.add_job(_wrap(job_lease_expiry_alerts), "cron", hour=9, minute=0, id="lease_expiry_alerts", replace_existing=True)
         scheduler.add_job(_wrap(job_rent_due_alerts), "cron", hour=8, minute=0, id="rent_due_alerts", replace_existing=True)
+        scheduler.add_job(_wrap(job_auto_bill_rent), "cron", hour=8, minute=15, id="auto_bill_rent", replace_existing=True)
         scheduler.add_job(_wrap(job_overdue_alerts), "cron", hour=8, minute=30, id="overdue_alerts", replace_existing=True)
         scheduler.add_job(
             _wrap(job_escalate_overdue_maintenance), "cron", hour=7, minute=0, id="maintenance_escalation", replace_existing=True
@@ -112,7 +114,7 @@ def register_cli(app):
 
     @app.cli.command("run-jobs")
     def run_jobs():
-        """Run all four scheduled background jobs once, immediately."""
+        """Run all five scheduled background jobs once, immediately."""
         from backend.scheduler_jobs import ALL_JOBS
 
         for job in ALL_JOBS:
