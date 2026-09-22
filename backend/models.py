@@ -41,6 +41,8 @@ PAYMENT_METHODS = ("CASH", "BANK_TRANSFER", "ONLINE", "CHEQUE")
 
 CHARGE_TYPES = ("OPERATIONAL", "SUNDRY", "ELECTRICITY")
 
+EXPENSE_CATEGORIES = ("MAINTENANCE", "TAX", "INSURANCE", "UTILITIES", "MANAGEMENT_FEE", "OTHER")
+
 MAINT_CATEGORIES = ("PLUMBING", "ELECTRICAL", "STRUCTURAL", "HVAC", "PEST_CONTROL", "OTHER")
 MAINT_SEVERITIES = ("LOW", "MEDIUM", "HIGH", "EMERGENCY")
 MAINT_STATUSES = ("SUBMITTED", "ACKNOWLEDGED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLOSED")
@@ -108,6 +110,7 @@ class Property(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     units = db.relationship("Unit", backref="property", cascade="all, delete-orphan", lazy="dynamic")
+    expenses = db.relationship("PropertyExpense", backref="property", cascade="all, delete-orphan", lazy="dynamic")
 
     def late_fee_for(self, monthly_rent: float) -> float:
         if self.late_fee_type == "FIXED":
@@ -455,6 +458,26 @@ class LeaseCharge(db.Model):
     description = db.Column(db.String(300), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     charged_at = db.Column(db.Date, nullable=False, default=date.today)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class PropertyExpense(db.Model):
+    """An operating expense the owner incurs against a property — taxes,
+    insurance, management fees, utilities paid by the landlord, general
+    upkeep — as distinct from a LeaseCharge (billed TO a tenant) or a
+    MaintenanceCost (tied to a specific repair ticket). Feeds into
+    property/portfolio net income reporting alongside maintenance costs."""
+
+    __tablename__ = "property_expenses"
+    __table_args__ = (db.Index("ix_expense_property_date", "property_id", "incurred_at"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    property_id = db.Column(db.String(36), db.ForeignKey("properties.id"), nullable=False)
+    category = db.Column(db.String(20), nullable=False, default="OTHER")
+    description = db.Column(db.String(300), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    incurred_at = db.Column(db.Date, nullable=False, default=date.today)
     recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 

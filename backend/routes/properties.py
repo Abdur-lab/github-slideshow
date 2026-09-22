@@ -1,7 +1,10 @@
+from datetime import date
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
 from backend.models import (
+    EXPENSE_CATEGORIES,
     LATE_FEE_TYPES,
     ROLE_ADMIN,
     ROLE_MANAGER,
@@ -10,6 +13,7 @@ from backend.models import (
     UNIT_TYPES,
     Lease,
     Property,
+    PropertyExpense,
     Unit,
 )
 from backend.security import assert_owner, audit_log, current_user, role_required, validate, validate_upload
@@ -119,7 +123,53 @@ def detail(property_id):
     assert_owner(property_id)
     prop = Property.query.get_or_404(property_id)
     units = prop.units.order_by(Unit.unit_number).all()
-    return render_template("properties/detail.html", property=prop, units=units)
+    expenses = prop.expenses.order_by(PropertyExpense.incurred_at.desc()).all()
+    return render_template(
+        "properties/detail.html", property=prop, units=units, expenses=expenses, expense_categories=EXPENSE_CATEGORIES
+    )
+
+
+@bp.route("/<property_id>/expenses/add", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def add_expense(property_id):
+    assert_owner(property_id)
+    prop = Property.query.get_or_404(property_id)
+    category = request.form.get("category", "OTHER")
+    description = request.form.get("description", "").strip()
+    amount = request.form.get("amount")
+    incurred_at_raw = request.form.get("incurred_at")
+
+    errors = []
+    if category not in EXPENSE_CATEGORIES:
+        category = "OTHER"
+    if not description:
+        errors.append("A description is required for the expense.")
+    if not validate("positive_float", amount):
+        errors.append("Expense amount must be a positive number.")
+    incurred_at = date.today()
+    if incurred_at_raw:
+        if not validate("date", incurred_at_raw):
+            errors.append("Expense date is invalid.")
+        else:
+            incurred_at = date.fromisoformat(incurred_at_raw)
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("properties.detail", property_id=prop.id))
+
+    expense = PropertyExpense(
+        property_id=prop.id,
+        category=category,
+        description=description,
+        amount=float(amount),
+        incurred_at=incurred_at,
+        recorded_by=current_user().id,
+    )
+    db.session.add(expense)
+    db.session.commit()
+    audit_log("property_expense_added", "PropertyExpense", expense.id, new_value={"category": category, "amount": float(amount)})
+    flash(f"{category.replace('_', ' ').title()} expense of {expense.amount:.2f} recorded.", "success")
+    return redirect(url_for("properties.detail", property_id=prop.id))
 
 
 @bp.route("/<property_id>/edit", methods=["GET", "POST"])

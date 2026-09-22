@@ -2,7 +2,7 @@
 maintenance cost summaries (UC-24 / UC-25)."""
 from datetime import date
 
-from backend.models import Lease, MaintenanceCost, MaintenanceRequest, Property, RentPayment, Unit
+from backend.models import Lease, MaintenanceCost, MaintenanceRequest, Property, PropertyExpense, RentPayment, Unit
 from backend.extensions import db
 
 
@@ -29,6 +29,14 @@ def property_performance(property_obj: Property, start: date = None, end: date =
     costs_q = MaintenanceCost.query.filter(MaintenanceCost.request_id.in_(request_ids)) if request_ids else MaintenanceCost.query.filter(False)
     total_maintenance_cost = round(sum(c.amount for c in costs_q.all()), 2)
 
+    expenses_q = PropertyExpense.query.filter(PropertyExpense.property_id == property_obj.id)
+    if start:
+        expenses_q = expenses_q.filter(PropertyExpense.incurred_at >= start)
+    if end:
+        expenses_q = expenses_q.filter(PropertyExpense.incurred_at <= end)
+    general_expenses = round(sum(e.amount for e in expenses_q.all()), 2)
+    total_expenses = round(general_expenses + total_maintenance_cost, 2)
+
     return {
         "property_name": property_obj.name,
         "property_code": property_obj.property_code,
@@ -38,7 +46,9 @@ def property_performance(property_obj: Property, start: date = None, end: date =
         "rent_collected": total_collected,
         "rent_outstanding": total_outstanding,
         "maintenance_cost": total_maintenance_cost,
-        "net_income_estimate": round(total_collected - total_maintenance_cost, 2),
+        "general_expenses": general_expenses,
+        "total_expenses": total_expenses,
+        "net_income_estimate": round(total_collected - total_expenses, 2),
         "open_maintenance_requests": sum(1 for r in requests if r.status not in ("COMPLETED", "CLOSED")),
     }
 
@@ -54,15 +64,23 @@ def portfolio_performance(properties) -> dict:
             "rent_collected": 0.0,
             "rent_outstanding": 0.0,
             "maintenance_cost": 0.0,
+            "general_expenses": 0.0,
+            "total_expenses": 0.0,
+            "net_income_estimate": 0.0,
         }
     total_units = sum(s["total_units"] for s in summaries)
     occupied_units = sum(s["occupied_units"] for s in summaries)
+    rent_collected = round(sum(s["rent_collected"] for s in summaries), 2)
+    total_expenses = round(sum(s["total_expenses"] for s in summaries), 2)
     return {
         "properties": summaries,
         "total_units": total_units,
         "occupied_units": occupied_units,
         "occupancy_rate": round((occupied_units / total_units) * 100, 1) if total_units else 0.0,
-        "rent_collected": round(sum(s["rent_collected"] for s in summaries), 2),
+        "rent_collected": rent_collected,
         "rent_outstanding": round(sum(s["rent_outstanding"] for s in summaries), 2),
         "maintenance_cost": round(sum(s["maintenance_cost"] for s in summaries), 2),
+        "general_expenses": round(sum(s["general_expenses"] for s in summaries), 2),
+        "total_expenses": total_expenses,
+        "net_income_estimate": round(rent_collected - total_expenses, 2),
     }
