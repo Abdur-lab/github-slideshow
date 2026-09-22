@@ -245,6 +245,7 @@ class Lease(db.Model):
     monthly_rent = db.Column(db.Float, nullable=False)
     deposit = db.Column(db.Float, nullable=False, default=0)
     due_day = db.Column(db.Integer, nullable=False, default=1)
+    pro_rata = db.Column(db.Boolean, nullable=False, default=False)
     status = db.Column(db.String(20), nullable=False, default="ACTIVE")
     document_path = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
@@ -277,8 +278,20 @@ class Lease(db.Model):
             month, year = 1, year + 1
         return date(year, month, self._clip_day(year, month))
 
+    def first_period_amount(self) -> float:
+        """Rent owed for the lease's first, potentially partial, calendar
+        month — a daily rate applied to the days from start_date to the end
+        of that calendar month. Equals monthly_rent in full when the lease
+        starts on the 1st. Only used when pro_rata proration is enabled."""
+        days_in_month = calendar.monthrange(self.start_date.year, self.start_date.month)[1]
+        days_occupied = days_in_month - self.start_date.day + 1
+        daily_rate = self.monthly_rent / days_in_month
+        return round(daily_rate * days_occupied, 2)
+
     def total_due_to_date(self, as_of: date = None) -> float:
-        """Number of elapsed rent periods (inclusive) times monthly rent."""
+        """Number of elapsed rent periods (inclusive) times monthly rent,
+        with the first period prorated to a partial-month daily rate when
+        pro_rata is enabled on this lease."""
         as_of = as_of or date.today()
         first_due = self.first_due_date()
         if as_of < first_due:
@@ -290,7 +303,10 @@ class Lease(db.Model):
             if due > as_of:
                 break
             periods += 1
-        return round(periods * self.monthly_rent, 2)
+        total = periods * self.monthly_rent
+        if self.pro_rata:
+            total = total - self.monthly_rent + self.first_period_amount()
+        return round(total, 2)
 
     def current_due_date(self, as_of: date = None):
         """Due date of the most recently started billing period, or None

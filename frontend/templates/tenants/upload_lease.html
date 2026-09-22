@@ -39,6 +39,15 @@
       <input type="number" min="1" max="31" id="due_day" name="due_day" value="1">
     </div>
     <div class="field">
+      <label>
+        <input type="checkbox" id="pro_rata" name="pro_rata">
+        Prorate the first month's rent based on the move-in date
+      </label>
+      <p class="text-muted" style="margin-top:0.25rem">
+        If the tenant moves in after the 1st, the first rent charge is reduced to a daily rate for the days actually occupied that month, instead of a full month.
+      </p>
+    </div>
+    <div class="field">
       <label for="lease_document">Signed lease PDF (max 20 MB)</label>
       <input type="file" id="lease_document" name="lease_document" accept="application/pdf" required>
     </div>

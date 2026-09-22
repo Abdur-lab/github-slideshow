@@ -8,6 +8,9 @@
 <div class="card">
   <p><strong>{{ lease.tenant.user.full_name }}</strong> — {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
   <p class="text-muted">Lease: {{ lease.start_date }} to {{ lease.end_date }}</p>
+  {% if lease.pro_rata %}
+  <p class="text-muted">Pro rata: first month prorated to {{ "%.2f"|format(lease.first_period_amount()) }} (full rate {{ "%.2f"|format(lease.monthly_rent) }}).</p>
+  {% endif %}
   {% if payments %}
   <table>
     <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Receipt #</th></tr></thead>

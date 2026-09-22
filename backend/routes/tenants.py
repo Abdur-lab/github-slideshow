@@ -140,6 +140,7 @@ def upload_lease(tenant_id):
         monthly_rent = request.form.get("monthly_rent")
         deposit = request.form.get("deposit") or "0"
         due_day = request.form.get("due_day") or "1"
+        pro_rata = request.form.get("pro_rata") == "on"
         lease_file = request.files.get("lease_document")
 
         errors = []
@@ -178,6 +179,7 @@ def upload_lease(tenant_id):
             monthly_rent=float(monthly_rent),
             deposit=float(deposit or 0),
             due_day=max(1, min(31, int(due_day or 1))),
+            pro_rata=pro_rata,
             document_path=relative_path,
         )
         db.session.add(lease)
