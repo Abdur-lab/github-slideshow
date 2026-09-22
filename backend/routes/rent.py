@@ -13,6 +13,7 @@ from backend.models import (
     ROLE_TENANT,
     Lease,
     LeaseCharge,
+    MeterReading,
     PAYMENT_METHODS,
     RentPayment,
     Tenant,
@@ -122,7 +123,16 @@ def statement(lease_id):
     lease = Lease.query.get_or_404(lease_id)
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
     charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
-    return render_template("rent/statement.html", lease=lease, payments=payments, charges=charges, charge_types=CHARGE_TYPES)
+    meter_readings = lease.unit.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).limit(10).all()
+    return render_template(
+        "rent/statement.html",
+        lease=lease,
+        payments=payments,
+        charges=charges,
+        charge_types=CHARGE_TYPES,
+        meter_readings=meter_readings,
+        today=date.today(),
+    )
 
 
 @bp.route("/<lease_id>/charges/add", methods=["POST"])
@@ -162,6 +172,87 @@ def add_charge(lease_id):
         f"Updated balance: {lease.balance:.2f}.",
     )
     flash(f"{charge_type.title()} charge of {charge.amount:.2f} added.", "success")
+    return redirect(url_for("rent.statement", lease_id=lease.id))
+
+
+@bp.route("/<lease_id>/meter/add-reading", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def add_meter_reading(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    unit = lease.unit
+    reading_date_raw = request.form.get("reading_date")
+    reading_value_raw = request.form.get("reading_value")
+
+    errors = []
+    reading_date = date.today()
+    if reading_date_raw:
+        if not validate("date", reading_date_raw):
+            errors.append("Reading date is invalid.")
+        else:
+            reading_date = date.fromisoformat(reading_date_raw)
+
+    try:
+        reading_value = float(reading_value_raw)
+        if reading_value < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("Meter reading must be a non-negative number.")
+        reading_value = None
+
+    previous = unit.latest_meter_reading
+    if reading_value is not None and previous is not None and reading_value < previous.reading_value:
+        errors.append(f"Reading ({reading_value}) is lower than the last recorded reading ({previous.reading_value}).")
+
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    consumption = None
+    amount = 0.0
+    if previous is not None:
+        consumption = round(reading_value - previous.reading_value, 2)
+        amount = round(consumption * unit.property.electricity_rate, 2)
+
+    reading = MeterReading(
+        unit_id=unit.id,
+        reading_date=reading_date,
+        reading_value=reading_value,
+        consumption=consumption,
+        rate_applied=unit.property.electricity_rate if previous is not None else None,
+        recorded_by=current_user().id,
+    )
+    db.session.add(reading)
+    db.session.flush()
+
+    if consumption is not None and amount > 0 and unit.active_lease:
+        charge = LeaseCharge(
+            lease_id=unit.active_lease.id,
+            charge_type="ELECTRICITY",
+            description=f"Electricity: {consumption} units @ {unit.property.electricity_rate:.2f}",
+            amount=amount,
+            recorded_by=current_user().id,
+        )
+        db.session.add(charge)
+        db.session.flush()
+        reading.charge_id = charge.id
+        db.session.commit()
+        audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value, "charge_amount": amount})
+        send_email(
+            unit.active_lease.tenant.user,
+            "A new electricity charge was added to your account",
+            f"An electricity charge of {amount:.2f} ({consumption} units) was added to your unit {unit.unit_code}. "
+            f"Updated balance: {unit.active_lease.balance:.2f}.",
+        )
+        flash(f"Reading recorded. Electricity charge of {amount:.2f} added.", "success")
+    else:
+        db.session.commit()
+        audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value})
+        if consumption is not None and not unit.active_lease:
+            flash("Reading recorded. This unit has no active lease, so no charge was billed.", "warning")
+        else:
+            flash("Reading recorded as the baseline for this unit.", "success")
+
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
 

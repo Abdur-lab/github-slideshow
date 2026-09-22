@@ -39,7 +39,7 @@ LEASE_STATUSES = ("ACTIVE", "TERMINATED", "EXPIRED")
 
 PAYMENT_METHODS = ("CASH", "BANK_TRANSFER", "ONLINE", "CHEQUE")
 
-CHARGE_TYPES = ("OPERATIONAL", "SUNDRY")
+CHARGE_TYPES = ("OPERATIONAL", "SUNDRY", "ELECTRICITY")
 
 MAINT_CATEGORIES = ("PLUMBING", "ELECTRICAL", "STRUCTURAL", "HVAC", "PEST_CONTROL", "OTHER")
 MAINT_SEVERITIES = ("LOW", "MEDIUM", "HIGH", "EMERGENCY")
@@ -104,6 +104,7 @@ class Property(db.Model):
     photo_paths = db.Column(db.JSON, nullable=False, default=list)
     late_fee_type = db.Column(db.String(10), nullable=False, default="NONE")
     late_fee_amount = db.Column(db.Float, nullable=False, default=0)
+    electricity_rate = db.Column(db.Float, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     units = db.relationship("Unit", backref="property", cascade="all, delete-orphan", lazy="dynamic")
@@ -150,6 +151,7 @@ class Unit(db.Model):
 
     leases = db.relationship("Lease", backref="unit", lazy="dynamic")
     maintenance_requests = db.relationship("MaintenanceRequest", backref="unit", lazy="dynamic")
+    meter_readings = db.relationship("MeterReading", backref="unit", lazy="dynamic")
 
     @staticmethod
     def generate_unit_code(property_code: str, unit_number: str) -> str:
@@ -158,6 +160,10 @@ class Unit(db.Model):
     @property
     def active_lease(self):
         return self.leases.filter_by(status="ACTIVE").order_by(Lease.start_date.desc()).first()
+
+    @property
+    def latest_meter_reading(self):
+        return self.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).first()
 
 
 class Tenant(db.Model):
@@ -387,6 +393,28 @@ class LeaseCharge(db.Model):
     charged_at = db.Column(db.Date, nullable=False, default=date.today)
     recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class MeterReading(db.Model):
+    """A manually-captured electricity meter reading for a unit. When a
+    prior reading exists, the consumption since that reading is billed to
+    the unit's active lease as an ELECTRICITY LeaseCharge, at the
+    property's electricity_rate in effect at the time of capture."""
+
+    __tablename__ = "meter_readings"
+    __table_args__ = (db.Index("ix_meter_unit_date", "unit_id", "reading_date"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    unit_id = db.Column(db.String(36), db.ForeignKey("units.id"), nullable=False)
+    reading_date = db.Column(db.Date, nullable=False, default=date.today)
+    reading_value = db.Column(db.Float, nullable=False)
+    consumption = db.Column(db.Float, nullable=True)
+    rate_applied = db.Column(db.Float, nullable=True)
+    charge_id = db.Column(db.String(36), db.ForeignKey("lease_charges.id"), nullable=True)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    charge = db.relationship("LeaseCharge")
 
 
 class MaintenanceRequest(db.Model):

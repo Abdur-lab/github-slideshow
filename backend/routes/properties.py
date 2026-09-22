@@ -131,12 +131,20 @@ def edit(property_id):
         description = request.form.get("description", "").strip()
         late_fee_type = request.form.get("late_fee_type", "NONE")
         late_fee_amount = request.form.get("late_fee_amount") or "0"
+        electricity_rate = request.form.get("electricity_rate") or "0"
 
         errors = []
         if late_fee_type not in LATE_FEE_TYPES:
             late_fee_type = "NONE"
         if late_fee_type != "NONE" and not validate("positive_float", late_fee_amount):
             errors.append("Late fee amount must be a positive number when a late fee type is selected.")
+        try:
+            electricity_rate_val = float(electricity_rate)
+            if electricity_rate_val < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            errors.append("Electricity rate must be a non-negative number.")
+            electricity_rate_val = prop.electricity_rate
         new_photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         existing = len(prop.photo_paths or [])
@@ -150,6 +158,7 @@ def edit(property_id):
         prop.description = description
         prop.late_fee_type = late_fee_type
         prop.late_fee_amount = float(late_fee_amount or 0) if late_fee_type != "NONE" else 0.0
+        prop.electricity_rate = electricity_rate_val
         if new_photos:
             saved = save_uploads(new_photos, f"properties/{prop.id}", MAX_PROPERTY_PHOTOS)
             prop.photo_paths = list(prop.photo_paths or []) + saved
