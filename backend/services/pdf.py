@@ -14,7 +14,7 @@ def _doc(buffer):
     return SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.75 * inch, bottomMargin=0.75 * inch)
 
 
-def render_rent_statement_pdf(lease, payments, generated_by: str) -> bytes:
+def render_rent_statement_pdf(lease, payments, generated_by: str, charges=None) -> bytes:
     buffer = io.BytesIO()
     styles = getSampleStyleSheet()
     elements = [
@@ -26,10 +26,12 @@ def render_rent_statement_pdf(lease, payments, generated_by: str) -> bytes:
         Spacer(1, 0.3 * inch),
     ]
 
-    rows = [["Date", "Type", "Amount", "Method", "Receipt #"]]
+    rows = [["Date", "Type", "Description", "Amount", "Receipt #"]]
     for p in payments:
-        rows.append([str(p.paid_at.date()), "Payment", f"{p.amount:.2f}", p.method, p.receipt_number])
-    table = Table(rows, colWidths=[1.2 * inch, 1.0 * inch, 1.0 * inch, 1.3 * inch, 1.8 * inch])
+        rows.append([str(p.paid_at.date()), "Payment", p.notes or "Rent payment", f"-{p.amount:.2f}", p.receipt_number])
+    for c in charges or []:
+        rows.append([str(c.charged_at), c.charge_type.title(), c.description, f"{c.amount:.2f}", "-"])
+    table = Table(rows, colWidths=[1.1 * inch, 1.0 * inch, 2.1 * inch, 1.0 * inch, 1.3 * inch])
     table.setStyle(
         TableStyle(
             [
@@ -42,7 +44,9 @@ def render_rent_statement_pdf(lease, payments, generated_by: str) -> bytes:
     )
     elements.append(table)
     elements.append(Spacer(1, 0.3 * inch))
-    elements.append(Paragraph(f"Total charged to date: {lease.total_due_to_date():.2f}", styles["Normal"]))
+    elements.append(Paragraph(f"Rent charged to date: {lease.total_due_to_date():.2f}", styles["Normal"]))
+    if charges:
+        elements.append(Paragraph(f"Operational/sundry charges: {lease.total_charges:.2f}", styles["Normal"]))
     elements.append(Paragraph(f"Total paid: {lease.total_paid:.2f}", styles["Normal"]))
     elements.append(Paragraph(f"Outstanding balance: {lease.balance:.2f}", styles["Heading3"]))
 

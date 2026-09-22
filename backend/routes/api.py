@@ -27,6 +27,7 @@ def lease_statement(lease_id):
             "monthly_rent": lease.monthly_rent,
             "total_due": lease.total_due_to_date(),
             "total_paid": lease.total_paid,
+            "total_charges": lease.total_charges,
             "balance": lease.balance,
             "payments": [
                 {"amount": p.amount, "method": p.method, "receipt_number": p.receipt_number, "paid_at": str(p.paid_at)}

@@ -39,6 +39,8 @@ LEASE_STATUSES = ("ACTIVE", "TERMINATED", "EXPIRED")
 
 PAYMENT_METHODS = ("CASH", "BANK_TRANSFER", "ONLINE", "CHEQUE")
 
+CHARGE_TYPES = ("OPERATIONAL", "SUNDRY")
+
 MAINT_CATEGORIES = ("PLUMBING", "ELECTRICAL", "STRUCTURAL", "HVAC", "PEST_CONTROL", "OTHER")
 MAINT_SEVERITIES = ("LOW", "MEDIUM", "HIGH", "EMERGENCY")
 MAINT_STATUSES = ("SUBMITTED", "ACKNOWLEDGED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CLOSED")
@@ -242,6 +244,7 @@ class Lease(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     payments = db.relationship("RentPayment", backref="lease", lazy="dynamic")
+    charges = db.relationship("LeaseCharge", backref="lease", lazy="dynamic")
 
     def _clip_day(self, year: int, month: int) -> int:
         last_day = calendar.monthrange(year, month)[1]
@@ -326,12 +329,21 @@ class Lease(db.Model):
         return self.unit.property.late_fee_for(self.monthly_rent)
 
     @property
+    def total_charges(self) -> float:
+        """Sum of ad-hoc operational/sundry charges levied against this
+        lease, in addition to recurring rent."""
+        total = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+            LeaseCharge.lease_id == self.id
+        ).scalar()
+        return round(float(total or 0.0), 2)
+
+    @property
     def balance(self) -> float:
-        return max(0.0, round(self.total_due_to_date() + self.late_fee_due() - self.total_paid, 2))
+        return max(0.0, round(self.total_due_to_date() + self.late_fee_due() + self.total_charges - self.total_paid, 2))
 
     @property
     def credit(self) -> float:
-        return max(0.0, round(self.total_paid - self.total_due_to_date() - self.late_fee_due(), 2))
+        return max(0.0, round(self.total_paid - self.total_due_to_date() - self.late_fee_due() - self.total_charges, 2))
 
     @property
     def is_overdue(self) -> bool:
@@ -356,6 +368,25 @@ class RentPayment(db.Model):
     @staticmethod
     def generate_receipt_number() -> str:
         return f"RCP-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+
+
+class LeaseCharge(db.Model):
+    """An ad-hoc, one-off charge levied against a lease in addition to
+    recurring rent — operational charges (e.g. common-area cleaning) and
+    sundries (e.g. a one-time call-out fee). Added to Lease.balance
+    alongside rent and any configured late fee."""
+
+    __tablename__ = "lease_charges"
+    __table_args__ = (db.Index("ix_charge_lease_date", "lease_id", "charged_at"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    lease_id = db.Column(db.String(36), db.ForeignKey("leases.id"), nullable=False)
+    charge_type = db.Column(db.String(20), nullable=False, default="OPERATIONAL")
+    description = db.Column(db.String(300), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    charged_at = db.Column(db.Date, nullable=False, default=date.today)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
 class MaintenanceRequest(db.Model):

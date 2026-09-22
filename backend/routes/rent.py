@@ -5,7 +5,18 @@ from datetime import date
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_TENANT, Lease, PAYMENT_METHODS, RentPayment, Tenant
+from backend.models import (
+    CHARGE_TYPES,
+    ROLE_ADMIN,
+    ROLE_MANAGER,
+    ROLE_OWNER,
+    ROLE_TENANT,
+    Lease,
+    LeaseCharge,
+    PAYMENT_METHODS,
+    RentPayment,
+    Tenant,
+)
 from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
 from backend.services.notifications import send_email
 from backend.services.pdf import render_rent_statement_pdf
@@ -110,7 +121,48 @@ def history_csv(lease_id):
 def statement(lease_id):
     lease = Lease.query.get_or_404(lease_id)
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
-    return render_template("rent/statement.html", lease=lease, payments=payments)
+    charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
+    return render_template("rent/statement.html", lease=lease, payments=payments, charges=charges, charge_types=CHARGE_TYPES)
+
+
+@bp.route("/<lease_id>/charges/add", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def add_charge(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    charge_type = request.form.get("charge_type", "OPERATIONAL")
+    description = request.form.get("description", "").strip()
+    amount = request.form.get("amount")
+
+    errors = []
+    if charge_type not in CHARGE_TYPES:
+        charge_type = "OPERATIONAL"
+    if not description:
+        errors.append("A description is required for the charge.")
+    if not validate("positive_float", amount):
+        errors.append("Charge amount must be a positive number.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    charge = LeaseCharge(
+        lease_id=lease.id,
+        charge_type=charge_type,
+        description=description,
+        amount=float(amount),
+        recorded_by=current_user().id,
+    )
+    db.session.add(charge)
+    db.session.commit()
+    audit_log("lease_charge_added", "LeaseCharge", charge.id, new_value={"charge_type": charge_type, "amount": float(amount)})
+    send_email(
+        lease.tenant.user,
+        "A new charge was added to your account",
+        f"A {charge_type.title()} charge of {charge.amount:.2f} ({description}) was added to your unit {lease.unit.unit_code}. "
+        f"Updated balance: {lease.balance:.2f}.",
+    )
+    flash(f"{charge_type.title()} charge of {charge.amount:.2f} added.", "success")
+    return redirect(url_for("rent.statement", lease_id=lease.id))
 
 
 @bp.route("/<lease_id>/statement.pdf")
@@ -118,7 +170,8 @@ def statement(lease_id):
 def statement_pdf(lease_id):
     lease = Lease.query.get_or_404(lease_id)
     payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
-    pdf_bytes = render_rent_statement_pdf(lease, payments, current_user().full_name)
+    charges = lease.charges.order_by(LeaseCharge.charged_at.asc()).all()
+    pdf_bytes = render_rent_statement_pdf(lease, payments, current_user().full_name, charges=charges)
     audit_log("rent_statement_exported", "Lease", lease.id)
     return Response(
         pdf_bytes,
