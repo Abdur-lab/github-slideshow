@@ -71,6 +71,45 @@ def render_rent_statement_pdf(
     return buffer.getvalue()
 
 
+def render_payment_receipt_pdf(payment, lease, balance_after: float, generated_by: str = None) -> bytes:
+    buffer = io.BytesIO()
+    styles = getSampleStyleSheet()
+    elements = [
+        Paragraph("RentalPro — Payment Receipt", styles["Title"]),
+        Paragraph(f"Receipt #: {payment.receipt_number}", styles["Normal"]),
+        Spacer(1, 0.2 * inch),
+    ]
+
+    rows = [
+        ["Tenant", lease.tenant.user.full_name],
+        ["Unit", f"{lease.unit.unit_code} ({lease.unit.property.name})"],
+        ["Date Paid", str(payment.paid_at.date())],
+        ["Amount Paid", f"{payment.amount:.2f}"],
+        ["Method", payment.method.replace("_", " ").title()],
+        ["Notes", payment.notes or "-"],
+    ]
+    table = Table(rows, colWidths=[1.5 * inch, 4.5 * inch])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f3f4f6")),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
+    elements.append(table)
+    elements.append(Spacer(1, 0.3 * inch))
+    elements.append(Paragraph(f"Balance after this payment: {balance_after:.2f}", styles["Heading3"]))
+    if generated_by:
+        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(Paragraph(f"Recorded by {generated_by}", styles["Normal"]))
+
+    _doc(buffer).build(elements)
+    return buffer.getvalue()
+
+
 def render_property_report_pdf(property_obj, summary: dict) -> bytes:
     buffer = io.BytesIO()
     styles = getSampleStyleSheet()

@@ -3,6 +3,7 @@ import io
 from datetime import date, timedelta
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
+from sqlalchemy import and_, or_
 
 from backend.extensions import db
 from backend.models import (
@@ -19,10 +20,11 @@ from backend.models import (
     RentPayment,
     RentRevision,
     Tenant,
+    User,
 )
 from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
 from backend.services.notifications import send_email
-from backend.services.pdf import render_rent_statement_pdf
+from backend.services.pdf import render_payment_receipt_pdf, render_rent_statement_pdf
 
 MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
@@ -116,6 +118,45 @@ def history_csv(lease_id):
         buffer.getvalue(),
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename=rent-history-{lease.id[:8]}.csv"},
+    )
+
+
+def _balance_after_payment(lease, payment) -> float:
+    """Lease balance immediately after the given payment was applied —
+    reconstructed from state as of that payment's date rather than
+    today's balance, so a receipt printed later still reflects what was
+    true when the payment was recorded. Same-day payments are ordered by
+    created_at as a tiebreaker, since paid_at alone is only date-precise
+    for manually backdated entries."""
+    as_of = payment.paid_at.date()
+    charges_to_date = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at <= as_of
+    ).scalar()
+    paid_to_payment = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id,
+        or_(
+            RentPayment.paid_at < payment.paid_at,
+            and_(RentPayment.paid_at == payment.paid_at, RentPayment.created_at <= payment.created_at),
+        ),
+    ).scalar()
+    return round(lease.total_due_to_date(as_of) + float(charges_to_date or 0.0) - float(paid_to_payment or 0.0), 2)
+
+
+@bp.route("/payments/<payment_id>/receipt.pdf")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def payment_receipt(payment_id):
+    payment = RentPayment.query.get_or_404(payment_id)
+    lease = payment.lease
+    assert_tenant_self(lease.tenant_id)
+
+    balance_after = _balance_after_payment(lease, payment)
+    recorder = db.session.get(User, payment.recorded_by)
+    pdf_bytes = render_payment_receipt_pdf(payment, lease, balance_after, generated_by=recorder.full_name if recorder else None)
+    audit_log("payment_receipt_downloaded", "RentPayment", payment.id)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=receipt-{payment.receipt_number}.pdf"},
     )
 
 
