@@ -45,6 +45,8 @@ def render_rent_statement_pdf(lease, payments, generated_by: str, charges=None) 
     elements.append(table)
     elements.append(Spacer(1, 0.3 * inch))
     elements.append(Paragraph(f"Rent charged to date: {lease.total_due_to_date():.2f}", styles["Normal"]))
+    if lease.current_monthly_rent != lease.monthly_rent:
+        elements.append(Paragraph(f"Current monthly rent: {lease.current_monthly_rent:.2f} (original {lease.monthly_rent:.2f})", styles["Normal"]))
     if charges:
         elements.append(Paragraph(f"Operational/sundry charges: {lease.total_charges:.2f}", styles["Normal"]))
     elements.append(Paragraph(f"Total paid: {lease.total_paid:.2f}", styles["Normal"]))

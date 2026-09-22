@@ -25,6 +25,7 @@ def lease_statement(lease_id):
             "start_date": str(lease.start_date),
             "end_date": str(lease.end_date),
             "monthly_rent": lease.monthly_rent,
+            "current_monthly_rent": lease.current_monthly_rent,
             "total_due": lease.total_due_to_date(),
             "total_paid": lease.total_paid,
             "total_charges": lease.total_charges,

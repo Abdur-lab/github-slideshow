@@ -252,6 +252,7 @@ class Lease(db.Model):
 
     payments = db.relationship("RentPayment", backref="lease", lazy="dynamic")
     charges = db.relationship("LeaseCharge", backref="lease", lazy="dynamic")
+    rent_revisions = db.relationship("RentRevision", backref="lease", lazy="dynamic")
 
     def _clip_day(self, year: int, month: int) -> int:
         last_day = calendar.monthrange(year, month)[1]
@@ -278,34 +279,52 @@ class Lease(db.Model):
             month, year = 1, year + 1
         return date(year, month, self._clip_day(year, month))
 
-    def first_period_amount(self) -> float:
+    def first_period_amount(self, monthly_rent: float = None) -> float:
         """Rent owed for the lease's first, potentially partial, calendar
         month — a daily rate applied to the days from start_date to the end
         of that calendar month. Equals monthly_rent in full when the lease
         starts on the 1st. Only used when pro_rata proration is enabled."""
+        monthly_rent = self.monthly_rent if monthly_rent is None else monthly_rent
         days_in_month = calendar.monthrange(self.start_date.year, self.start_date.month)[1]
         days_occupied = days_in_month - self.start_date.day + 1
-        daily_rate = self.monthly_rent / days_in_month
+        daily_rate = monthly_rent / days_in_month
         return round(daily_rate * days_occupied, 2)
 
+    def rent_at(self, as_of: date = None) -> float:
+        """The monthly rent in effect on the given date: the most recent
+        RentRevision effective on/before that date, or the lease's base
+        monthly_rent if no revision has taken effect yet. Lets a lease's
+        rent change over its term (e.g. an annual escalation) without
+        altering the original amount recorded on the lease itself."""
+        as_of = as_of or date.today()
+        revision = (
+            self.rent_revisions.filter(RentRevision.effective_date <= as_of)
+            .order_by(RentRevision.effective_date.desc(), RentRevision.created_at.desc())
+            .first()
+        )
+        return revision.monthly_rent if revision else self.monthly_rent
+
+    @property
+    def current_monthly_rent(self) -> float:
+        return self.rent_at(date.today())
+
     def total_due_to_date(self, as_of: date = None) -> float:
-        """Number of elapsed rent periods (inclusive) times monthly rent,
+        """Sum of rent owed for each elapsed billing period (inclusive),
+        using the rent in effect at each period's due date (see rent_at),
         with the first period prorated to a partial-month daily rate when
         pro_rata is enabled on this lease."""
         as_of = as_of or date.today()
         first_due = self.first_due_date()
         if as_of < first_due:
             return 0.0
-        periods = 1
+        first_rent = self.rent_at(first_due)
+        total = self.first_period_amount(first_rent) if self.pro_rata else first_rent
         due = first_due
         while True:
             due = self._advance_month(due)
             if due > as_of:
                 break
-            periods += 1
-        total = periods * self.monthly_rent
-        if self.pro_rata:
-            total = total - self.monthly_rent + self.first_period_amount()
+            total += self.rent_at(due)
         return round(total, 2)
 
     def current_due_date(self, as_of: date = None):
@@ -348,7 +367,7 @@ class Lease(db.Model):
             return 0.0
         if self.total_due_to_date(as_of) <= self.total_paid:
             return 0.0
-        return self.unit.property.late_fee_for(self.monthly_rent)
+        return self.unit.property.late_fee_for(self.rent_at(as_of))
 
     @property
     def total_charges(self) -> float:
@@ -407,6 +426,26 @@ class LeaseCharge(db.Model):
     description = db.Column(db.String(300), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     charged_at = db.Column(db.Date, nullable=False, default=date.today)
+    recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class RentRevision(db.Model):
+    """A scheduled change to a lease's monthly rent, effective from a
+    given date onward (e.g. an annual escalation or a mid-term
+    adjustment). The lease's own monthly_rent stays the original/base
+    amount; Lease.rent_at(date) and Lease.total_due_to_date() resolve
+    the rent actually billed for each period from the latest revision
+    effective on/before that period's due date."""
+
+    __tablename__ = "rent_revisions"
+    __table_args__ = (db.Index("ix_revision_lease_date", "lease_id", "effective_date"),)
+
+    id = db.Column(db.String(36), primary_key=True, default=gen_uuid)
+    lease_id = db.Column(db.String(36), db.ForeignKey("leases.id"), nullable=False)
+    effective_date = db.Column(db.Date, nullable=False)
+    monthly_rent = db.Column(db.Float, nullable=False)
+    reason = db.Column(db.String(300), nullable=True)
     recorded_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 

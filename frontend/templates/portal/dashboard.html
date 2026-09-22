@@ -7,7 +7,7 @@
 {% if lease %}
 <div class="grid grid-3 mt-1">
   <div class="stat-tile"><div class="label">Unit</div><div class="value" style="font-size:1.1rem">{{ lease.unit.unit_code }}</div></div>
-  <div class="stat-tile"><div class="label">Monthly Rent</div><div class="value">{{ "%.2f"|format(lease.monthly_rent) }}</div></div>
+  <div class="stat-tile"><div class="label">Monthly Rent</div><div class="value">{{ "%.2f"|format(lease.current_monthly_rent) }}</div></div>
   <div class="stat-tile"><div class="label">Balance Due</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
 </div>
 {% if lease.balance > 0 %}

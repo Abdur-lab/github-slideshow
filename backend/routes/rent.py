@@ -16,6 +16,7 @@ from backend.models import (
     MeterReading,
     PAYMENT_METHODS,
     RentPayment,
+    RentRevision,
     Tenant,
 )
 from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
@@ -124,6 +125,7 @@ def statement(lease_id):
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
     charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
     meter_readings = lease.unit.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).limit(10).all()
+    rent_revisions = lease.rent_revisions.order_by(RentRevision.effective_date.desc()).all()
     return render_template(
         "rent/statement.html",
         lease=lease,
@@ -131,6 +133,7 @@ def statement(lease_id):
         charges=charges,
         charge_types=CHARGE_TYPES,
         meter_readings=meter_readings,
+        rent_revisions=rent_revisions,
         today=date.today(),
     )
 
@@ -253,6 +256,51 @@ def add_meter_reading(lease_id):
         else:
             flash("Reading recorded as the baseline for this unit.", "success")
 
+    return redirect(url_for("rent.statement", lease_id=lease.id))
+
+
+@bp.route("/<lease_id>/revise-rent", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def revise_rent(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    effective_date_raw = request.form.get("effective_date")
+    monthly_rent = request.form.get("monthly_rent")
+    reason = request.form.get("reason", "").strip()
+
+    errors = []
+    if not validate("date", effective_date_raw):
+        errors.append("A valid effective date is required.")
+    elif date.fromisoformat(effective_date_raw) < lease.start_date:
+        errors.append("Effective date cannot be before the lease start date.")
+    if not validate("positive_float", monthly_rent):
+        errors.append("Revised monthly rent must be a positive number.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    revision = RentRevision(
+        lease_id=lease.id,
+        effective_date=date.fromisoformat(effective_date_raw),
+        monthly_rent=float(monthly_rent),
+        reason=reason or None,
+        recorded_by=current_user().id,
+    )
+    db.session.add(revision)
+    db.session.commit()
+    audit_log(
+        "rent_revision_added",
+        "RentRevision",
+        revision.id,
+        new_value={"effective_date": str(revision.effective_date), "monthly_rent": revision.monthly_rent},
+    )
+    send_email(
+        lease.tenant.user,
+        "Your rent is changing",
+        f"Your monthly rent for unit {lease.unit.unit_code} will change to {revision.monthly_rent:.2f}, "
+        f"effective {revision.effective_date}.",
+    )
+    flash(f"Rent revision recorded: {revision.monthly_rent:.2f} effective {revision.effective_date}.", "success")
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
 

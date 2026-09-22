@@ -39,7 +39,7 @@
     {% if lease %}
       <p><strong>Unit:</strong> {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
       <p><strong>Term:</strong> {{ lease.start_date }} to {{ lease.end_date }}</p>
-      <p><strong>Monthly rent:</strong> {{ "%.2f"|format(lease.monthly_rent) }}{% if lease.pro_rata %} <span class="text-muted">(first month prorated)</span>{% endif %}</p>
+      <p><strong>Monthly rent:</strong> {{ "%.2f"|format(lease.current_monthly_rent) }}{% if lease.current_monthly_rent != lease.monthly_rent %} <span class="text-muted">(originally {{ "%.2f"|format(lease.monthly_rent) }})</span>{% endif %}{% if lease.pro_rata %} <span class="text-muted">(first month prorated)</span>{% endif %}</p>
       <p><strong>Balance:</strong> {{ "%.2f"|format(lease.balance) }}</p>
       <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">Record Payment</a>
       <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">Rent History</a>
