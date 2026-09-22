@@ -2,7 +2,7 @@
 {% from "macros.html" import status_badge %}
 {% block title %}My Dashboard — RentalPro{% endblock %}
 {% block content %}
-<h1>Welcome, {{ tenant.user.first_name }}</h1>
+<h1>Welcome, {{ tenant.user.full_name }}</h1>
 
 {% if lease %}
 <div class="grid grid-3 mt-1">
