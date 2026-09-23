@@ -156,10 +156,11 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 124 tests, 0 failures, 79% statement coverage across
-`backend/` (`pytest --cov=backend`). Two tests self-skip within a few days
-of month-end, where day-of-month clipping (e.g. a due day of 31 landing in
-February) could shift the exact alert date being asserted by a day.
+**Current results:** 202 tests (201 passed, 1 skipped), 0 failures, 82%
+statement coverage across `backend/` (`pytest --cov=backend`). One test
+self-skips within a few days of month-end, where day-of-month clipping
+(e.g. a due day of 31 landing in February) could shift the exact alert
+date being asserted by a day.
 
 ## Deliverable 5 — Feature Completion
 
