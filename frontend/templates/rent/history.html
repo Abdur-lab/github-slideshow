@@ -15,7 +15,7 @@
     <tbody>
     {% for p in payments %}
       <tr>
-        <td>{{ p.paid_at }}</td>
+        <td>{{ p.paid_at.date() }}</td>
         <td>{{ "%.2f"|format(p.amount) }}</td>
         <td>{{ p.method.replace('_', ' ').title() }}</td>
         <td>{{ p.receipt_number }}</td>

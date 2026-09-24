@@ -13,6 +13,21 @@ def test_login_success_redirects_by_role(client, owner, manager, staff, tenant):
     assert resp.status_code == 200
     assert b"Welcome" in resp.data
 
+    resp = login(client, "staff@test.com")
+    assert resp.status_code == 200
+    assert b"My Work Queue" in resp.data
+
+
+def test_sidebar_brand_links_to_each_roles_home(client, owner, staff, tenant):
+    login(client, "owner@test.com")
+    assert b'href="/dashboard" class="brand"' in client.get("/properties").data
+
+    login(client, "staff@test.com")
+    assert b'href="/maintenance" class="brand"' in client.get("/maintenance").data
+
+    login(client, "tenant@test.com")
+    assert b'href="/portal" class="brand"' in client.get("/portal").data
+
 
 def test_login_wrong_password(client, owner):
     resp = client.post("/login", data={"email": "owner@test.com", "password": "not-the-password"}, follow_redirects=True)

@@ -124,3 +124,21 @@ def test_period_totals_tie_out_to_lease_balance_over_full_history(client, db, ow
     resp = client.get(f"/rent/{active_lease.id}/statement?start={start}&end={end}")
     assert resp.status_code == 200
     assert f"{active_lease.balance:.2f}".encode() in resp.data
+
+
+def test_payment_dates_show_date_without_time(client, db, owner, active_lease):
+    db.session.add(RentPayment(
+        lease_id=active_lease.id,
+        amount=850.0,
+        method="CASH",
+        receipt_number=RentPayment.generate_receipt_number(),
+        paid_at=datetime(2026, 9, 24, 19, 44, 47, 416651),
+        recorded_by=owner.id,
+    ))
+    db.session.commit()
+    login(client, owner.email)
+    for url in (f"/rent/{active_lease.id}/history", f"/rent/{active_lease.id}/statement"):
+        resp = client.get(url)
+        assert resp.status_code == 200
+        assert b"<td>2026-09-24</td>" in resp.data
+        assert b"19:44:47" not in resp.data
