@@ -6,6 +6,7 @@ from backend.security import (
     audit_log,
     clear_login_failures,
     current_user,
+    home_url,
     login_user,
     logout_user,
     register_login_failure,
@@ -37,8 +38,7 @@ def login():
         clear_login_failures(user)
         login_user(user)
         audit_log("login", "User", user.id)
-        default = url_for("portal.index") if user.role == ROLE_TENANT else url_for("dashboard.index")
-        return redirect(safe_next_url(request.args.get("next") or request.form.get("next"), default))
+        return redirect(safe_next_url(request.args.get("next") or request.form.get("next"), home_url(user)))
     return render_template("auth/login.html")
 
 

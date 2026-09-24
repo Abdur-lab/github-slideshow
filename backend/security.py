@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from flask import abort, g, has_request_context, redirect, request, session, url_for
 
 from backend.extensions import db
-from backend.models import AuditLog, Property, ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, User
+from backend.models import AuditLog, Property, ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_STAFF, ROLE_TENANT, User
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -38,6 +38,15 @@ def login_user(user: User) -> None:
 
 def logout_user() -> None:
     session.clear()
+
+
+def home_url(user: User) -> str:
+    """The landing page for a user's role: the portal, the work queue, or the dashboard."""
+    if user.role == ROLE_TENANT:
+        return url_for("portal.index")
+    if user.role == ROLE_STAFF:
+        return url_for("maintenance.index")
+    return url_for("dashboard.index")
 
 
 def login_required(view):

@@ -29,11 +29,11 @@ def create_app(config_class=Config):
     for bp in ALL_BLUEPRINTS:
         app.register_blueprint(bp)
 
-    from backend.security import current_user
+    from backend.security import current_user, home_url
 
     @app.context_processor
     def inject_globals():
-        return {"current_user": current_user()}
+        return {"current_user": current_user(), "home_url": home_url}
 
     @app.errorhandler(403)
     def forbidden(_e):
