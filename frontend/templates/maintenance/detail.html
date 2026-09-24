@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, severity_badge %}
+{% block title %}{{ req.ticket_number }} — RentalPro{% endblock %}
+{% block content %}
+<h1>{{ req.ticket_number }} — {{ req.title }}</h1>
+<p>{{ status_badge(req.status) }} {{ severity_badge(req.severity) }} {% if req.is_overdue %}<span class="badge badge-red">Overdue</span>{% endif %}</p>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Details</h3>
+    <p><strong>Unit:</strong> {{ req.unit.unit_code }} ({{ req.unit.property.name }})</p>
+    <p><strong>Tenant:</strong> {{ req.tenant.user.full_name }}</p>
+    <p><strong>Category:</strong> {{ req.category.replace('_', ' ').title() }}</p>
+    <p><strong>Description:</strong> {{ req.description }}</p>
+    <p><strong>Assigned to:</strong> {{ req.assignee.full_name if req.assignee else "Unassigned" }}</p>
+    <p><strong>Target date:</strong> {{ req.target_date or "Not set" }}</p>
+    {% if req.satisfaction_rating %}<p><strong>Tenant rating:</strong> {{ req.satisfaction_rating }}/5</p>{% endif %}
+
+    {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') and req.status in ('SUBMITTED', 'ACKNOWLEDGED', 'ASSIGNED') %}
+    <hr>
+    <h4>Assign to Staff</h4>
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="assign">
+      <div class="field">
+        <label for="staff_id">Staff member</label>
+        <select id="staff_id" name="staff_id" required>
+          <option value="">Select&hellip;</option>
+          {% for s in staff %}<option value="{{ s.id }}" {% if req.assigned_to == s.id %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="target_date">Target completion date</label>
+        <input type="date" id="target_date" name="target_date" value="{{ req.target_date or '' }}">
+      </div>
+      <div class="field">
+        <label for="notes">Internal notes (optional)</label>
+        <input type="text" id="notes" name="notes">
+      </div>
+      <button class="btn" type="submit">Confirm Assignment</button>
+    </form>
+    {% endif %}
+
+    {% if current_user.role == 'MAINTENANCE_STAFF' and req.assigned_to == current_user.id and req.status in ('ASSIGNED', 'IN_PROGRESS') %}
+    <hr>
+    <h4>Update Status</h4>
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="notes">Work notes</label>
+        <textarea id="notes" name="notes"></textarea>
+      </div>
+      {% if req.status == 'ASSIGNED' %}
+        <button class="btn" type="submit" name="action" value="start">Mark In Progress</button>
+      {% else %}
+        <div class="field">
+          <label for="photos">Completion photos (optional, up to 3)</label>
+          <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
+        </div>
+        <button class="btn" type="submit" name="action" value="complete">Mark Completed</button>
+      {% endif %}
+    </form>
+    {% endif %}
+
+    {% if req.photo_paths or req.completion_photo_paths %}
+    <hr>
+    {% if req.photo_paths %}
+    <h4>Submitted Photos</h4>
+    <div class="grid grid-3">
+      {% for p in req.photo_paths %}
+        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if req.completion_photo_paths %}
+    <h4>Completion Photos</h4>
+    <div class="grid grid-3">
+      {% for p in req.completion_photo_paths %}
+        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if current_user.role == 'TENANT' and req.status == 'COMPLETED' %}
+    <hr>
+    <h4>Review Completed Work</h4>
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" style="margin-bottom:0.5rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="close">
+      <div class="field">
+        <label for="rating">Satisfaction rating (1-5, optional)</label>
+        <input type="number" id="rating" name="rating" min="1" max="5">
+      </div>
+      <button class="btn" type="submit">Confirm Resolution</button>
+    </form>
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="reopen">
+      <div class="field">
+        <label for="reason">Reason for reopening</label>
+        <input type="text" id="reason" name="reason" required>
+      </div>
+      <button class="btn btn-secondary" type="submit">Reopen Request</button>
+    </form>
+    {% endif %}
+
+    {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') and req.status not in ('CLOSED',) %}
+    <hr>
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" onsubmit="return confirm('Force-close this request?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="close">
+      <button class="btn btn-secondary btn-sm" type="submit">Force Close</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Work Notes</h3>
+    {% set notes = req.notes_log.all() %}
+    {% if notes %}
+      {% for note in notes %}
+      <p><strong>{{ note.author.full_name }}</strong> <span class="text-muted">({{ note.created_at.strftime('%Y-%m-%d %H:%M') }})</span><br>{{ note.note }}</p>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">No notes yet.</p>
+    {% endif %}
+
+    {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') %}
+    <hr>
+    <h3>Costs {% if req.total_cost %}(total {{ "%.2f"|format(req.total_cost) }}){% endif %}</h3>
+    {% set costs = req.costs.all() %}
+    {% if costs %}
+    <table>
+      <thead><tr><th>Category</th><th>Amount</th><th>Description</th></tr></thead>
+      <tbody>
+      {% for c in costs %}
+        <tr><td>{{ c.category.title() }}</td><td>{{ "%.2f"|format(c.amount) }}</td><td>{{ c.description or "—" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    <form method="post" action="{{ url_for('maintenance.add_cost', request_id=req.id) }}" class="mt-1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid grid-3">
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="LABOUR">Labour</option>
+            <option value="MATERIALS">Materials</option>
+            <option value="CONTRACTOR">Contractor</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="amount">Amount</label>
+          <input type="number" step="0.01" id="amount" name="amount" required>
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <input type="text" id="description" name="description">
+        </div>
+      </div>
+      <button class="btn btn-sm" type="submit">Log Cost</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

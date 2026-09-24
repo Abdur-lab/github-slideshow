@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}{{ tenant.user.full_name }} — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <div>
+    <h1>{{ tenant.user.full_name }}</h1>
+    <p class="text-muted">{{ tenant.user.email }} &middot; {{ tenant.national_id }} &middot; {{ tenant.phone or "no phone on file" }}</p>
+  </div>
+  {% if tenant.id_document_path %}
+  <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.id_document', tenant_id=tenant.id) }}" target="_blank">View ID Document</a>
+  {% endif %}
+</div>
+
+{% if tenant.is_blacklisted %}
+<div class="flash flash-error">
+  Blacklisted: {{ tenant.blacklist_reason }}
+  <form method="post" action="{{ url_for('tenants.unblacklist', tenant_id=tenant.id) }}" style="display:inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-sm btn-secondary" type="submit" style="margin-left:0.5rem">Remove Flag</button>
+  </form>
+</div>
+{% else %}
+<div class="card">
+  <form method="post" action="{{ url_for('tenants.blacklist', tenant_id=tenant.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="flex-between">
+      <input type="text" name="reason" placeholder="Reason for blacklisting (required)" style="flex:1;margin-right:0.5rem">
+      <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Blacklist this tenant? They will be blocked from future leases.');">Blacklist Tenant</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Active Lease</h3>
+    {% set lease = tenant.active_lease %}
+    {% if lease %}
+      <p><strong>Unit:</strong> {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
+      <p><strong>Term:</strong> {{ lease.start_date }} to {{ lease.end_date }}</p>
+      <p><strong>Monthly rent:</strong> {{ "%.2f"|format(lease.current_monthly_rent) }}{% if lease.current_monthly_rent != lease.monthly_rent %} <span class="text-muted">(originally {{ "%.2f"|format(lease.monthly_rent) }})</span>{% endif %}{% if lease.pro_rata %} <span class="text-muted">(first month prorated)</span>{% endif %}</p>
+      <p><strong>Balance:</strong> {{ "%.2f"|format(lease.balance) }}</p>
+      <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">Record Payment</a>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">Rent History</a>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">Generate Statement</a>
+      {% if lease.document_path %}<a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.lease_document', tenant_id=tenant.id, lease_id=lease.id) }}" target="_blank">Download Lease PDF</a>{% endif %}
+    {% else %}
+      <p class="text-muted">No active lease.</p>
+      <a class="btn btn-sm" href="{{ url_for('tenants.upload_lease', tenant_id=tenant.id) }}">Upload Lease Document</a>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3>Lease History</h3>
+    {% if leases %}
+    <table>
+      <thead><tr><th>Unit</th><th>Term</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for l in leases %}
+        <tr><td>{{ l.unit.unit_code }}</td><td>{{ l.start_date }} – {{ l.end_date }}</td><td>{{ status_badge(l.status) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No lease history.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

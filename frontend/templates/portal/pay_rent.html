@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Pay Rent — RentalPro{% endblock %}
+{% block content %}
+<h1>Pay Rent</h1>
+<div class="card" style="max-width:480px">
+  <p><strong>Unit:</strong> {{ lease.unit.unit_code }}</p>
+  <p><strong>Amount due:</strong> {{ "%.2f"|format(lease.balance) }}</p>
+  {% if lease.balance > 0 %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn" type="submit" style="width:100%">Pay Now</button>
+  </form>
+  {% else %}
+  <p class="text-muted">You have no outstanding balance. Thank you!</p>
+  {% endif %}
+</div>
+{% endblock %}

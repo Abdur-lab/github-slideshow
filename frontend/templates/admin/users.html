@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}Manage Users — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Manage Users &amp; Roles</h1>
+  <a href="{{ url_for('admin.add_staff') }}" class="btn">+ Add Staff Account</a>
+</div>
+<div class="card mt-1">
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Update</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.full_name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role.replace('_', ' ').title() }}</td>
+        <td>{% if u.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Inactive</span>{% endif %}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.edit_user', user_id=u.id) }}" style="display:flex;gap:0.4rem;align-items:center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="role" style="width:auto">
+              {% for r in roles %}<option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r.replace('_', ' ').title() }}</option>{% endfor %}
+            </select>
+            <label style="display:flex;align-items:center;gap:0.25rem;font-weight:normal;white-space:nowrap">
+              <input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %}> Active
+            </label>
+            <button class="btn btn-sm btn-secondary" type="submit">Save</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

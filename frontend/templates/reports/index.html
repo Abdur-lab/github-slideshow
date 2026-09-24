@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Reports — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Property Performance Report</h1>
+  <div>
+    <a class="btn btn-secondary" href="{{ url_for('reports.export_xlsx', property_id=selected.id if selected else None) }}">Export Excel</a>
+    <a class="btn" href="{{ url_for('reports.export_pdf', property_id=selected.id if selected else None) }}">Export PDF</a>
+  </div>
+</div>
+
+<form method="get" class="card">
+  <div class="field">
+    <label for="property_id">Property</label>
+    <select id="property_id" name="property_id" onchange="this.form.submit()">
+      <option value="">All Properties (Portfolio)</option>
+      {% for p in properties %}
+        <option value="{{ p.id }}" {% if selected and selected.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if selected %}
+<div class="grid grid-4">
+  <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ summary.occupancy_rate }}%</div></div>
+  <div class="stat-tile"><div class="label">Rent Collected</div><div class="value">{{ "%.2f"|format(summary.rent_collected) }}</div></div>
+  <div class="stat-tile"><div class="label">Outstanding</div><div class="value">{{ "%.2f"|format(summary.rent_outstanding) }}</div></div>
+  <div class="stat-tile"><div class="label">Total Expenses</div><div class="value">{{ "%.2f"|format(summary.total_expenses) }}</div></div>
+</div>
+<div class="card mt-1">
+  <p><strong>Maintenance cost:</strong> {{ "%.2f"|format(summary.maintenance_cost) }}</p>
+  <p><strong>General expenses:</strong> {{ "%.2f"|format(summary.general_expenses) }}</p>
+  <p><strong>Net income estimate:</strong> {{ "%.2f"|format(summary.net_income_estimate) }}</p>
+  <p><strong>Open maintenance requests:</strong> {{ summary.open_maintenance_requests }}</p>
+</div>
+{% else %}
+<div class="grid grid-4">
+  <div class="stat-tile"><div class="label">Total Units</div><div class="value">{{ summary.total_units }}</div></div>
+  <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ summary.occupancy_rate }}%</div></div>
+  <div class="stat-tile"><div class="label">Rent Collected</div><div class="value">{{ "%.2f"|format(summary.rent_collected) }}</div></div>
+  <div class="stat-tile"><div class="label">Total Expenses</div><div class="value">{{ "%.2f"|format(summary.total_expenses) }}</div></div>
+</div>
+<div class="card mt-1">
+  <p><strong>Net income estimate:</strong> {{ "%.2f"|format(summary.net_income_estimate) }}</p>
+</div>
+<div class="card mt-1">
+  <h3>By Property</h3>
+  {% if summary.properties %}
+  <table>
+    <thead><tr><th>Property</th><th>Occupancy</th><th>Collected</th><th>Outstanding</th><th>Expenses</th><th>Net Income</th></tr></thead>
+    <tbody>
+    {% for s in summary.properties %}
+      <tr>
+        <td>{{ s.property_name }}</td>
+        <td>{{ s.occupancy_rate }}%</td>
+        <td>{{ "%.2f"|format(s.rent_collected) }}</td>
+        <td>{{ "%.2f"|format(s.rent_outstanding) }}</td>
+        <td>{{ "%.2f"|format(s.total_expenses) }}</td>
+        <td>{{ "%.2f"|format(s.net_income_estimate) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No data available for the selected period.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Add Staff Account — RentalPro{% endblock %}
+{% block content %}
+<h1>Add Maintenance Staff Account</h1>
+<div class="card" style="max-width:500px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="full_name">Full name</label>
+      <input type="text" id="full_name" name="full_name" value="{{ form.get('full_name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="{{ form.get('email', '') }}" required>
+    </div>
+    <button class="btn" type="submit">Create Staff Account</button>
+    <a href="{{ url_for('maintenance.index') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+  <p class="text-muted mt-1">A welcome email with a link to set a password will be sent to the new account.</p>
+</div>
+{% endblock %}

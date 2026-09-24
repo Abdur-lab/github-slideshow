@@ -1,0 +1,103 @@
+1
+00:00:00,525 --> 00:00:03,334
+RentalPro — What's New: The Billing Engine — Signing in as Property Owner (owner@rentalpro.com)
+
+2
+00:00:03,826 --> 00:00:07,446
+Quick Recap — RentalPro already covers the full rental lifecycle: properties, units, tenants, leases, maintenance, and reporting.
+
+3
+00:00:07,988 --> 00:00:11,196
+The Meridian Borrowdale — A commercial property — electricity billing and a percentage late fee already configured.
+
+4
+00:00:11,714 --> 00:00:15,320
+New: Pro Rata Rent — Bubble Tea is moving in mid-month — the first month's rent should be prorated, not charged in full.
+
+5
+00:00:15,610 --> 00:00:18,415
+Lease Activated — First Month Prorated — The tenant record shows the reduced first charge at a glance.
+
+6
+00:00:18,483 --> 00:00:21,913
+Statement Reflects the Proration — A daily rate for the days actually occupied — full rent from the second month on.
+
+7
+00:00:22,962 --> 00:00:25,766
+RentalPro — What's New: The Billing Engine — Signing in as Property Owner (owner@rentalpro.com)
+
+8
+00:00:26,775 --> 00:00:30,580
+Urban Fork — Rent Statement — Six months of history: payments, charges, meter readings, revisions, and invoices — all in one ledger.
+
+9
+00:00:30,580 --> 00:00:33,984
+New: Operational & Sundry Charges — One-off charges beyond rent — a call-out fee, common-area cleaning — billed straight to the lease.
+
+10
+00:00:34,148 --> 00:00:36,557
+Charge Added — The balance updates immediately, and the tenant is emailed a notice.
+
+11
+00:00:36,557 --> 00:00:40,160
+New: Electricity Metering — A configured rate per property, plus manual meter readings — consumption bills itself automatically.
+
+12
+00:00:40,319 --> 00:00:43,726
+Reading Recorded — Consumption since the last reading, at the property's rate, becomes an ELECTRICITY charge automatically.
+
+13
+00:00:43,726 --> 00:00:47,130
+New: Variable / Escalating Rent — A rent change mid-lease — an annual escalation — takes effect from a chosen date forward.
+
+14
+00:00:47,287 --> 00:00:50,895
+Revision Scheduled — Every billing period now bills at the rate in effect on its own due date — past periods are untouched.
+
+15
+00:00:50,895 --> 00:00:55,099
+New: Automated Recurring Billing — A daily scheduler job bills each elapsed period exactly once — this lease's full invoice history, generated hands-free.
+
+16
+00:00:56,145 --> 00:00:58,949
+RentalPro — What's New: The Billing Engine — Signing in as Property Owner (owner@rentalpro.com)
+
+17
+00:00:59,945 --> 00:01:03,949
+New: Account Statements by Period — Opening balance, in-period activity, and a closing balance — a true bank-style statement for any date range.
+
+18
+00:01:05,000 --> 00:01:07,804
+RentalPro — What's New: The Billing Engine — Signing in as Tenant (tenant1@email.com)
+
+19
+00:01:08,801 --> 00:01:12,405
+Tenants See the Same Ledger — Full self-service statement access — read-only, and scoped to their own lease only.
+
+20
+00:01:12,405 --> 00:01:15,607
+New: Payment Receipts — Every payment now has a real, downloadable PDF receipt — not just a receipt number.
+
+21
+00:01:15,712 --> 00:01:18,315
+Receipt Downloaded — Tenant, unit, amount, method, and the balance at the moment of payment.
+
+22
+00:01:19,351 --> 00:01:22,155
+RentalPro — What's New: The Billing Engine — Signing in as Property Owner (owner@rentalpro.com)
+
+23
+00:01:23,172 --> 00:01:26,375
+New: Property Operating Expenses — Costs the owner incurs — tax, insurance, management fees — as distinct from charges billed to tenants.
+
+24
+00:01:26,518 --> 00:01:28,936
+Expense Recorded — It now feeds straight into the property's performance report.
+
+25
+00:01:29,469 --> 00:01:33,673
+Net Income, For Real This Time — Rent collected minus total expenses — maintenance costs and general expenses both — a true net income estimate.
+
+26
+00:01:34,721 --> 00:01:39,326
+RentalPro — IT401 Capstone — full lifecycle management plus a complete billing engine: charges, metering, pro rata, variable rent, auto billing, statements, receipts, and expenses. Thank you.

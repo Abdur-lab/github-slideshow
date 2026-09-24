@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ property.name }} — RentalPro{% endblock %}
+{% block content %}
+<h1>Edit {{ property.name }}</h1>
+<div class="card" style="max-width:600px">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description">{{ property.description or '' }}</textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="late_fee_type">Late fee</label>
+        <select id="late_fee_type" name="late_fee_type">
+          {% for t in late_fee_types %}<option value="{{ t }}" {% if property.late_fee_type == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="late_fee_amount">Amount (fixed) or % (percentage)</label>
+        <input type="number" step="0.01" id="late_fee_amount" name="late_fee_amount" value="{{ property.late_fee_amount }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="electricity_rate">Electricity rate (per unit of consumption, 0 = not billed)</label>
+      <input type="number" step="0.01" min="0" id="electricity_rate" name="electricity_rate" value="{{ property.electricity_rate }}">
+    </div>
+
+    {% if property.photo_paths %}
+    <div class="field">
+      <label>Current photos ({{ property.photo_paths|length }}/10)</label>
+      <div class="grid grid-4">
+        {% for p in property.photo_paths %}
+          <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="field">
+      <label for="photos">Add more photos (JPG/PNG, max 5 MB each)</label>
+      <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
+    </div>
+
+    <button class="btn" type="submit">Save Changes</button>
+    <a href="{{ url_for('properties.detail', property_id=property.id) }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

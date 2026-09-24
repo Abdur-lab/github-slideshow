@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}RentalPro{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% if current_user %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a href="{{ url_for('portal.index') if current_user.role == 'TENANT' else url_for('dashboard.index') }}" class="brand">RentalPro</a>
+    <span class="role-badge">{{ current_user.role.replace('_', ' ') }}</span>
+    <nav>
+      {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') %}
+        <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+        <a href="{{ url_for('properties.index') }}">Properties</a>
+        <a href="{{ url_for('tenants.index') }}">Tenants</a>
+        <a href="{{ url_for('rent.index') }}">Rent Tracker</a>
+        <a href="{{ url_for('maintenance.index') }}">Maintenance</a>
+        <a href="{{ url_for('reports.index') }}">Reports</a>
+        <a href="{{ url_for('admin.add_staff') }}">+ Add Staff</a>
+        {% if current_user.role == 'ADMIN' %}
+        <a href="{{ url_for('admin.users') }}">Manage Users</a>
+        {% endif %}
+      {% elif current_user.role == 'MAINTENANCE_STAFF' %}
+        <a href="{{ url_for('maintenance.index') }}">My Work Queue</a>
+      {% elif current_user.role == 'TENANT' %}
+        <a href="{{ url_for('portal.index') }}">My Dashboard</a>
+        <a href="{{ url_for('portal.pay') }}">Pay Rent</a>
+        <a href="{{ url_for('portal.history') }}">Payment History</a>
+        <a href="{{ url_for('maintenance.add') }}">Submit Request</a>
+      {% endif %}
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div>{{ current_user.full_name }} &middot; <span class="text-muted">{{ current_user.email }}</span></div>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm">Log out</a>
+    </div>
+    <div class="content">
+      {% include "_flashes.html" %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="auth-page">
+  <div class="auth-card">
+    {% include "_flashes.html" %}
+    {% block auth_content %}{% endblock %}
+  </div>
+</div>
+{% endif %}
+</body>
+</html>

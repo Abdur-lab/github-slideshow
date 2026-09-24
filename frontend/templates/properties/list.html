@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}Properties — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Properties</h1>
+  {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER') %}
+  <a href="{{ url_for('properties.add') }}" class="btn">+ Add New Property</a>
+  {% endif %}
+</div>
+
+{% if properties %}
+<div class="grid grid-3 mt-1">
+  {% for p in properties %}
+  <div class="card">
+    <div class="flex-between">
+      <h3 style="margin:0"><a href="{{ url_for('properties.detail', property_id=p.id) }}">{{ p.name }}</a></h3>
+      {{ status_badge(p.status) }}
+    </div>
+    <p class="text-muted">{{ p.property_code }} &middot; {{ p.type }}</p>
+    <p>{{ p.address }}, {{ p.city }}, {{ p.country }}</p>
+    <p class="text-muted">Occupancy: {{ p.occupancy_rate }}%</p>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <p>No properties yet.</p>
+  {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER') %}
+  <a href="{{ url_for('properties.add') }}" class="btn">Add your first property</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,450 @@
+import csv
+import io
+from datetime import date, timedelta
+
+from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
+from sqlalchemy import and_, or_
+
+from backend.extensions import db
+from backend.models import (
+    CHARGE_TYPES,
+    ROLE_ADMIN,
+    ROLE_MANAGER,
+    ROLE_OWNER,
+    ROLE_TENANT,
+    Lease,
+    LeaseCharge,
+    MeterReading,
+    PAYMENT_METHODS,
+    RentInvoice,
+    RentPayment,
+    RentRevision,
+    Tenant,
+    User,
+)
+from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
+from backend.services.notifications import send_email
+from backend.services.pdf import render_payment_receipt_pdf, render_rent_statement_pdf
+
+MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
+
+bp = Blueprint("rent", __name__, url_prefix="/rent")
+
+
+@bp.route("")
+@role_required(*MANAGEMENT_ROLES)
+def index():
+    leases = Lease.query.filter_by(status="ACTIVE").all()
+    rows = sorted(leases, key=lambda l: l.balance, reverse=True)
+    return render_template("rent/tracker.html", leases=rows)
+
+
+@bp.route("/record", methods=["GET", "POST"])
+@role_required(*MANAGEMENT_ROLES)
+def record():
+    lease_id = request.args.get("lease_id") or request.form.get("lease_id")
+    lease = db.session.get(Lease, lease_id) if lease_id else None
+    active_leases = Lease.query.filter_by(status="ACTIVE").all()
+
+    if request.method == "POST":
+        amount = request.form.get("amount")
+        method = request.form.get("method", "CASH")
+        paid_at_raw = request.form.get("paid_at")
+        notes = request.form.get("notes", "").strip()
+
+        errors = []
+        if not lease:
+            errors.append("Please select a tenant/lease.")
+        if not validate("positive_float", amount):
+            errors.append("Amount must be a positive number.")
+        paid_at = date.today()
+        if paid_at_raw:
+            if not validate("date", paid_at_raw):
+                errors.append("Payment date is invalid.")
+            else:
+                paid_at = date.fromisoformat(paid_at_raw)
+                if paid_at > date.today():
+                    flash("Payment date is in the future — please confirm this is correct.", "warning")
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template("rent/record_payment.html", lease=lease, active_leases=active_leases, methods=PAYMENT_METHODS)
+
+        payment = RentPayment(
+            lease_id=lease.id,
+            amount=float(amount),
+            method=method if method in PAYMENT_METHODS else "CASH",
+            receipt_number=RentPayment.generate_receipt_number(),
+            paid_at=paid_at,
+            recorded_by=current_user().id,
+            notes=notes,
+        )
+        db.session.add(payment)
+        db.session.commit()
+        audit_log("rent_payment_recorded", "RentPayment", payment.id, new_value={"amount": float(amount), "lease_id": lease.id})
+        send_email(
+            lease.tenant.user,
+            "Rent payment received",
+            f"We received your payment of {payment.amount:.2f} ({payment.receipt_number}). Remaining balance: {lease.balance:.2f}.",
+        )
+        flash(f"Payment recorded. Receipt {payment.receipt_number}.", "success")
+        return redirect(url_for("rent.index"))
+
+    return render_template("rent/record_payment.html", lease=lease, active_leases=active_leases, methods=PAYMENT_METHODS)
+
+
+@bp.route("/<lease_id>/history")
+@role_required(*MANAGEMENT_ROLES)
+def history(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
+    return render_template("rent/history.html", lease=lease, payments=payments)
+
+
+@bp.route("/<lease_id>/history.csv")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def history_csv(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+    payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Date", "Type", "Amount", "Method", "Receipt Number", "Notes"])
+    for p in payments:
+        writer.writerow([p.paid_at.date().isoformat(), "Payment", f"{p.amount:.2f}", p.method, p.receipt_number, p.notes or ""])
+    audit_log("rent_history_exported", "Lease", lease.id, new_value={"format": "csv"})
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=rent-history-{lease.id[:8]}.csv"},
+    )
+
+
+def _balance_after_payment(lease, payment) -> float:
+    """Lease balance immediately after the given payment was applied —
+    reconstructed from state as of that payment's date rather than
+    today's balance, so a receipt printed later still reflects what was
+    true when the payment was recorded. Same-day payments are ordered by
+    created_at as a tiebreaker, since paid_at alone is only date-precise
+    for manually backdated entries."""
+    as_of = payment.paid_at.date()
+    charges_to_date = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at <= as_of
+    ).scalar()
+    paid_to_payment = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id,
+        or_(
+            RentPayment.paid_at < payment.paid_at,
+            and_(RentPayment.paid_at == payment.paid_at, RentPayment.created_at <= payment.created_at),
+        ),
+    ).scalar()
+    return round(lease.total_due_to_date(as_of) + float(charges_to_date or 0.0) - float(paid_to_payment or 0.0), 2)
+
+
+@bp.route("/payments/<payment_id>/receipt.pdf")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def payment_receipt(payment_id):
+    payment = RentPayment.query.get_or_404(payment_id)
+    lease = payment.lease
+    assert_tenant_self(lease.tenant_id)
+
+    balance_after = _balance_after_payment(lease, payment)
+    recorder = db.session.get(User, payment.recorded_by)
+    pdf_bytes = render_payment_receipt_pdf(payment, lease, balance_after, generated_by=recorder.full_name if recorder else None)
+    audit_log("payment_receipt_downloaded", "RentPayment", payment.id)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=receipt-{payment.receipt_number}.pdf"},
+    )
+
+
+def _parse_period(args):
+    """Reads optional start/end query params for a statement period.
+    Returns (period_start, period_end, error) — error is a user-facing
+    message when the params are present but invalid, in which case the
+    caller should fall back to the unfiltered, all-time statement."""
+    start_raw = args.get("start")
+    end_raw = args.get("end")
+    if not start_raw and not end_raw:
+        return None, None, None
+    if not (validate("date", start_raw) and validate("date", end_raw)):
+        return None, None, "Statement period dates are invalid."
+    period_start = date.fromisoformat(start_raw)
+    period_end = date.fromisoformat(end_raw)
+    if period_end < period_start:
+        return None, None, "Statement end date must be on or after the start date."
+    return period_start, period_end, None
+
+
+def _period_totals(lease, period_start, period_end):
+    """Opening/closing balance and period activity for a lease over
+    [period_start, period_end], decomposing the same additive terms
+    Lease.balance uses (total_due_to_date + charges - payments) into an
+    'up to the day before the period' opening balance and an 'in period'
+    slice, so a full-lease-history period always ties out to lease.balance
+    (late fees are a point-in-time concept and, as on the all-time
+    statement, are not broken out as a line item here)."""
+    charges_before = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at < period_start
+    ).scalar()
+    payments_before = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id, RentPayment.paid_at < period_start
+    ).scalar()
+    opening_balance = round(
+        lease.total_due_to_date(period_start - timedelta(days=1)) + float(charges_before or 0.0) - float(payments_before or 0.0), 2
+    )
+    rent_in_period = round(lease.total_due_to_date(period_end) - lease.total_due_to_date(period_start - timedelta(days=1)), 2)
+    charges_in_period = db.session.query(db.func.coalesce(db.func.sum(LeaseCharge.amount), 0.0)).filter(
+        LeaseCharge.lease_id == lease.id, LeaseCharge.charged_at >= period_start, LeaseCharge.charged_at <= period_end
+    ).scalar()
+    payments_in_period = db.session.query(db.func.coalesce(db.func.sum(RentPayment.amount), 0.0)).filter(
+        RentPayment.lease_id == lease.id, RentPayment.paid_at >= period_start, RentPayment.paid_at <= period_end
+    ).scalar()
+    charges_in_period = round(float(charges_in_period or 0.0), 2)
+    payments_in_period = round(float(payments_in_period or 0.0), 2)
+    closing_balance = round(opening_balance + rent_in_period + charges_in_period - payments_in_period, 2)
+    return {
+        "opening_balance": opening_balance,
+        "rent_in_period": rent_in_period,
+        "charges_in_period": charges_in_period,
+        "payments_in_period": payments_in_period,
+        "closing_balance": closing_balance,
+    }
+
+
+@bp.route("/<lease_id>/statement")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def statement(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+
+    period_start, period_end, period_error = _parse_period(request.args)
+    if period_error:
+        flash(period_error, "error")
+
+    payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
+    charges = lease.charges.order_by(LeaseCharge.charged_at.desc()).all()
+    meter_readings = lease.unit.meter_readings.order_by(MeterReading.reading_date.desc(), MeterReading.created_at.desc()).limit(10).all()
+    rent_revisions = lease.rent_revisions.order_by(RentRevision.effective_date.desc()).all()
+    invoices = lease.invoices.order_by(RentInvoice.period_due_date.desc()).limit(12).all()
+
+    period_totals = None
+    if period_start:
+        payments = [p for p in payments if period_start <= p.paid_at.date() <= period_end]
+        charges = [c for c in charges if period_start <= c.charged_at <= period_end]
+        period_totals = _period_totals(lease, period_start, period_end)
+
+    return render_template(
+        "rent/statement.html",
+        lease=lease,
+        payments=payments,
+        charges=charges,
+        charge_types=CHARGE_TYPES,
+        meter_readings=meter_readings,
+        rent_revisions=rent_revisions,
+        invoices=invoices,
+        today=date.today(),
+        period_start=period_start,
+        period_end=period_end,
+        period_totals=period_totals,
+    )
+
+
+@bp.route("/<lease_id>/charges/add", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def add_charge(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    charge_type = request.form.get("charge_type", "OPERATIONAL")
+    description = request.form.get("description", "").strip()
+    amount = request.form.get("amount")
+
+    errors = []
+    if charge_type not in CHARGE_TYPES:
+        charge_type = "OPERATIONAL"
+    if not description:
+        errors.append("A description is required for the charge.")
+    if not validate("positive_float", amount):
+        errors.append("Charge amount must be a positive number.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    charge = LeaseCharge(
+        lease_id=lease.id,
+        charge_type=charge_type,
+        description=description,
+        amount=float(amount),
+        recorded_by=current_user().id,
+    )
+    db.session.add(charge)
+    db.session.commit()
+    audit_log("lease_charge_added", "LeaseCharge", charge.id, new_value={"charge_type": charge_type, "amount": float(amount)})
+    send_email(
+        lease.tenant.user,
+        "A new charge was added to your account",
+        f"A {charge_type.title()} charge of {charge.amount:.2f} ({description}) was added to your unit {lease.unit.unit_code}. "
+        f"Updated balance: {lease.balance:.2f}.",
+    )
+    flash(f"{charge_type.title()} charge of {charge.amount:.2f} added.", "success")
+    return redirect(url_for("rent.statement", lease_id=lease.id))
+
+
+@bp.route("/<lease_id>/meter/add-reading", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def add_meter_reading(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    unit = lease.unit
+    reading_date_raw = request.form.get("reading_date")
+    reading_value_raw = request.form.get("reading_value")
+
+    errors = []
+    reading_date = date.today()
+    if reading_date_raw:
+        if not validate("date", reading_date_raw):
+            errors.append("Reading date is invalid.")
+        else:
+            reading_date = date.fromisoformat(reading_date_raw)
+
+    try:
+        reading_value = float(reading_value_raw)
+        if reading_value < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("Meter reading must be a non-negative number.")
+        reading_value = None
+
+    previous = unit.latest_meter_reading
+    if reading_value is not None and previous is not None and reading_value < previous.reading_value:
+        errors.append(f"Reading ({reading_value}) is lower than the last recorded reading ({previous.reading_value}).")
+
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    consumption = None
+    amount = 0.0
+    if previous is not None:
+        consumption = round(reading_value - previous.reading_value, 2)
+        amount = round(consumption * unit.property.electricity_rate, 2)
+
+    reading = MeterReading(
+        unit_id=unit.id,
+        reading_date=reading_date,
+        reading_value=reading_value,
+        consumption=consumption,
+        rate_applied=unit.property.electricity_rate if previous is not None else None,
+        recorded_by=current_user().id,
+    )
+    db.session.add(reading)
+    db.session.flush()
+
+    if consumption is not None and amount > 0 and unit.active_lease:
+        charge = LeaseCharge(
+            lease_id=unit.active_lease.id,
+            charge_type="ELECTRICITY",
+            description=f"Electricity: {consumption} units @ {unit.property.electricity_rate:.2f}",
+            amount=amount,
+            recorded_by=current_user().id,
+        )
+        db.session.add(charge)
+        db.session.flush()
+        reading.charge_id = charge.id
+        db.session.commit()
+        audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value, "charge_amount": amount})
+        send_email(
+            unit.active_lease.tenant.user,
+            "A new electricity charge was added to your account",
+            f"An electricity charge of {amount:.2f} ({consumption} units) was added to your unit {unit.unit_code}. "
+            f"Updated balance: {unit.active_lease.balance:.2f}.",
+        )
+        flash(f"Reading recorded. Electricity charge of {amount:.2f} added.", "success")
+    else:
+        db.session.commit()
+        audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value})
+        if consumption is not None and not unit.active_lease:
+            flash("Reading recorded. This unit has no active lease, so no charge was billed.", "warning")
+        else:
+            flash("Reading recorded as the baseline for this unit.", "success")
+
+    return redirect(url_for("rent.statement", lease_id=lease.id))
+
+
+@bp.route("/<lease_id>/revise-rent", methods=["POST"])
+@role_required(*MANAGEMENT_ROLES)
+def revise_rent(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    effective_date_raw = request.form.get("effective_date")
+    monthly_rent = request.form.get("monthly_rent")
+    reason = request.form.get("reason", "").strip()
+
+    errors = []
+    if not validate("date", effective_date_raw):
+        errors.append("A valid effective date is required.")
+    elif date.fromisoformat(effective_date_raw) < lease.start_date:
+        errors.append("Effective date cannot be before the lease start date.")
+    if not validate("positive_float", monthly_rent):
+        errors.append("Revised monthly rent must be a positive number.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("rent.statement", lease_id=lease.id))
+
+    revision = RentRevision(
+        lease_id=lease.id,
+        effective_date=date.fromisoformat(effective_date_raw),
+        monthly_rent=float(monthly_rent),
+        reason=reason or None,
+        recorded_by=current_user().id,
+    )
+    db.session.add(revision)
+    db.session.commit()
+    audit_log(
+        "rent_revision_added",
+        "RentRevision",
+        revision.id,
+        new_value={"effective_date": str(revision.effective_date), "monthly_rent": revision.monthly_rent},
+    )
+    send_email(
+        lease.tenant.user,
+        "Your rent is changing",
+        f"Your monthly rent for unit {lease.unit.unit_code} will change to {revision.monthly_rent:.2f}, "
+        f"effective {revision.effective_date}.",
+    )
+    flash(f"Rent revision recorded: {revision.monthly_rent:.2f} effective {revision.effective_date}.", "success")
+    return redirect(url_for("rent.statement", lease_id=lease.id))
+
+
+@bp.route("/<lease_id>/statement.pdf")
+@role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
+def statement_pdf(lease_id):
+    lease = Lease.query.get_or_404(lease_id)
+    assert_tenant_self(lease.tenant_id)
+
+    period_start, period_end, _period_error = _parse_period(request.args)
+    payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
+    charges = lease.charges.order_by(LeaseCharge.charged_at.asc()).all()
+    period_totals = None
+    if period_start:
+        payments = [p for p in payments if period_start <= p.paid_at.date() <= period_end]
+        charges = [c for c in charges if period_start <= c.charged_at <= period_end]
+        period_totals = _period_totals(lease, period_start, period_end)
+
+    pdf_bytes = render_rent_statement_pdf(
+        lease,
+        payments,
+        current_user().full_name,
+        charges=charges,
+        period_start=period_start,
+        period_end=period_end,
+        period_totals=period_totals,
+    )
+    audit_log("rent_statement_exported", "Lease", lease.id)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=statement-{lease.id[:8]}.pdf"},
+    )

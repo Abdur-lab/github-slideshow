@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Payment History — RentalPro{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Payment History</h1>
+  <div>
+    {% if lease %}<a class="btn btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">Full Account Statement</a>{% endif %}
+    {% if payments and lease %}<a class="btn btn-secondary" href="{{ url_for('rent.history_csv', lease_id=lease.id) }}">Export CSV</a>{% endif %}
+  </div>
+</div>
+{% if payments %}
+<div class="card mt-1">
+  <table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Receipt #</th><th></th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.paid_at.date() }}</td>
+        <td>{{ "%.2f"|format(p.amount) }}</td>
+        <td>{{ p.method.replace('_', ' ').title() }}</td>
+        <td>{{ p.receipt_number }}</td>
+        <td><a class="btn btn-sm btn-secondary" href="{{ url_for('rent.payment_receipt', payment_id=p.id) }}" target="_blank">Receipt</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state"><p>No payment history yet.</p></div>
+{% endif %}
+{% endblock %}

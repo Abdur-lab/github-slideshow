@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Record Payment — RentalPro{% endblock %}
+{% block content %}
+<h1>Record Rent Payment</h1>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="lease_id">Tenant</label>
+      <select id="lease_id" name="lease_id" required>
+        <option value="">Select a tenant&hellip;</option>
+        {% for l in active_leases %}
+          <option value="{{ l.id }}" {% if lease and lease.id == l.id %}selected{% endif %}>
+            {{ l.tenant.user.full_name }} — {{ l.unit.unit_code }} (balance {{ "%.2f"|format(l.balance) }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if lease %}<p class="text-muted">Current balance: <strong>{{ "%.2f"|format(lease.balance) }}</strong></p>{% endif %}
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="amount">Amount</label>
+        <input type="number" step="0.01" id="amount" name="amount" required>
+      </div>
+      <div class="field">
+        <label for="method">Method</label>
+        <select id="method" name="method">
+          {% for m in methods %}<option value="{{ m }}">{{ m.replace('_', ' ').title() }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="paid_at">Payment date</label>
+      <input type="date" id="paid_at" name="paid_at">
+    </div>
+    <div class="field">
+      <label for="notes">Notes / reference (optional)</label>
+      <input type="text" id="notes" name="notes">
+    </div>
+    <button class="btn" type="submit">Save Payment</button>
+    <a href="{{ url_for('rent.index') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

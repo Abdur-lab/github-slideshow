@@ -1,0 +1,63 @@
+1
+00:00:00,000 --> 00:00:32,400
+Good [morning/afternoon]. My name is Abdurrahmaan Ali, and today I'm presenting RentalPro, a Digital Rental Management System built as my IT401 capstone project. Over the next few minutes I'll walk through the problem this system solves, how it was designed and built, and the results of testing it — including a live demo of the working application. All six project deliverables — requirements, design, the working prototype, the full project report, 100% feature completion, and the final demo and presentation package — are finished, tested, and documented. Since then, I've also extended the system with a full billing engine, which I'll cover as well.
+
+2
+00:00:32,400 --> 00:01:12,800
+Small landlords and property managers are still running their business on spreadsheets, paper leases, and sticky notes. That creates four real problems: there's no single source of truth for rent and lease data; nothing proactively catches missed rent or an expiring lease; cash payments and verbal maintenance requests leave no accountability trail; and tenants have no way to self-serve — they have to call or email for a balance or a repair update. RentalPro is built for five kinds of users on one platform: Property Owners, Property Managers, Tenants, Maintenance Staff, and Administrators — replacing the spreadsheet with one accountable system.
+
+3
+00:01:12,800 --> 00:02:02,000
+Five objectives guided the whole project. First, centralize property and lease data into one record instead of scattered spreadsheets. Second, automate the reminders landlords actually miss — lease expiry, rent due, overdue rent, and overdue maintenance all fire from background jobs, not a human remembering. Third, give every one of the five roles a scoped view, enforced by role-based access control plus ownership checks — one Owner literally cannot query another Owner's data. Fourth, make every record auditable: payments are immutable, and every state change writes to an append-only audit log. And fifth — the one I'll spend the most time proving today — ship it fully tested. Not just working, but 100% of the requirements implemented and covered by an automated test.
+
+4
+00:02:02,000 --> 00:02:31,600
+Deliverable 1 was the Software Requirements Specification — 25 use cases across six functional areas: authentication and RBAC, property and unit management, the full tenant lifecycle from onboarding to self-service, rent and payments including automated alerts, the six-stage maintenance lifecycle, and reporting. Every one of these 25 use cases — I'll show this again in the testing section — ended up with a route, a template, and at least one automated test behind it.
+
+5
+00:02:31,600 --> 00:03:15,600
+Deliverable 2 turned those 25 use cases into a UML class diagram and a 13-table relational schema. Every table uses a UUID string primary key instead of an auto-increment integer, specifically so the identical schema runs unmodified on SQLite in development and test, and PostgreSQL in production. A few other decisions from this design carried straight through into the build: naive UTC timestamps to avoid timezone bugs across environments, soft status fields instead of physical deletes so history is never lost, rent payments that are only ever inserted and never edited, and JSON columns on the audit log so any entity's before-and-after state can be captured without a schema migration.
+
+6
+00:03:15,600 --> 00:04:10,400
+The application is a layered Flask monolith — deliberately simplified from Deliverable 2's more ambitious microservice sketch, because a single developer needed to build and verify it in the time available. Presentation is 35 Jinja2 templates behind role-aware navigation. The application layer is 10 Flask Blueprints — one each for auth, properties, tenants, rent, maintenance, admin, reports, the tenant portal, and the REST API. Below that, the domain and service layer holds security.py for RBAC and IDOR protection, the four scheduler jobs, and a services package for PDF generation, Excel export, notifications, and payments. Data is 13 SQLAlchemy models with UUID keys. And infrastructure is Docker Compose running PostgreSQL and Redis, with a dev-mode fallback for every paid external service — which is what let me build and test this entire system without a single paid account.
+
+7
+00:04:10,400 --> 00:04:51,600
+Every screen in RentalPro is scoped to one of five roles. Owners create and edit properties and units, configure late fees, and see the full portfolio report. Managers work within properties an Owner already added — onboarding and, new in Deliverable 5, blacklisting tenants, and assigning maintenance work. Tenants get a self-service portal: pay rent online, and submit maintenance requests with photos. Staff see only their own assigned work queue — nothing else in the system is visible to them. And Administrators get full data visibility plus, again new in Deliverable 5, a dedicated console for managing every user's role and account status.
+
+8
+00:04:51,600 --> 00:05:39,600
+Deliverable 5 is where the project went from working to 100% complete against the original requirements. Eight gaps were identified and closed: photo uploads for properties, units, and maintenance tickets, all validated by their actual file content, not just the extension; configurable late fees, fixed or percentage, applied automatically once rent is overdue; tenant blacklisting, which blocks a future lease without touching an existing one; tenant ID document upload; the admin user console, with a safety guard that won't let you remove the last active Owner; self-service staff account creation; and one-click CSV and Excel export for rent history and portfolio reporting. Every one of these eight is covered by its own test module, which I'll show numbers for next.
+
+9
+00:05:39,600 --> 00:06:37,200
+Beyond the original five deliverables, I extended RentalPro with a full billing engine — eight more capabilities, each additive so the existing 124 tests never had to change. Operational and sundry charges bill one-off costs straight to a lease. Electricity metering bills consumption automatically from a configured rate. Pro rata rent prorates a partial first month instead of charging it in full. Variable rent lets a lease's rate change mid-term — an annual escalation — while past periods stay billed at their own rate. A daily scheduler job now bills each period automatically and idempotently. Account statements support a real date range with an opening and closing balance, and tenants can view their own. Every payment gets a real downloadable PDF receipt. And property expenses now feed a true net income estimate, not just rent collected minus maintenance. Seventy-eight new tests back all of it, which the next slide's numbers include.
+
+10
+00:06:37,200 --> 00:07:26,800
+This is the slide that backs up every claim in this presentation. 202 automated tests, zero failures, 82 percent statement coverage across the backend, and all 25 use cases from the SRS covered by at least one test. The chart breaks that down by module — 36 validation tests, 31 for Deliverable 5's feature gaps, and 78 for the billing engine alone, the single largest test module in the project. Importantly, these aren't unit tests calling isolated functions — they go through Flask's real test client, issuing actual HTTP requests through session handling, CSRF, RBAC, and the ORM. That's how a real security bug like cross-owner data access — one Property Owner querying another Owner's property — gets caught before it ships, not after.
+
+11
+00:07:26,800 --> 00:08:04,800
+Now let's see it running. I'll walk through six things: first, an Owner setting up a property and unit with photos and a configured late fee. Second, onboarding a new tenant, uploading their lease, and watching the unit activate. Third, the Deliverable 5 blacklist toggle and recording a rent payment. Fourth, a full maintenance ticket lifecycle rotating through four different role logins — tenant submits, owner assigns, staff completes, tenant confirms. Fifth, the admin console for user management and creating a new staff account. And finally, the billing engine end to end — charges, metering, pro rata, a rent revision, the automated billing job's paper trail, a filtered account statement, a downloaded payment receipt, and a property expense feeding into net income. [Switch to the recorded demo video or live application here.]
+
+12
+00:08:04,800 --> 00:08:58,800
+Three challenges stand out. The first was reconciling earlier, more ambitious design documents with what one developer could actually build and verify in the time available — I simplified Deliverable 2's microservice-style sketch into a layered monolith, and when I found Deliverable 3's original numbers had drifted from reality, I corrected the document rather than leaving the gap in place. Second, getting recurring billing correct at calendar edges — a lease starting on the 31st, or a due day that doesn't exist in February — meant writing the edge-case tests before trusting the calculation, not after. Third, testing payments, email, and SMS without a live paid account of any kind — solved with a dev-mode fallback pattern applied consistently across every external integration, which is also exactly what let this whole demo run offline today.
+
+13
+00:08:58,800 --> 00:09:53,200
+Security wasn't bolted on — eight controls run through every request. Passwords are hashed with 600,000 rounds of PBKDF2. Every protected route carries a role check, and every sensitive lookup also carries an ownership check at the resource level — the combination is what stops a second Property Owner from viewing the first Owner's data even though they share a role. CSRF protection covers every form, with one deliberate, documented exemption for the Stripe webhook, which instead carries its own manual HMAC verification with a replay window. Five failed logins locks an account for 15 minutes. Every file upload is validated by its actual magic bytes, not its claimed extension — so a ZIP renamed to .pdf, or a non-image file renamed to .jpg, gets rejected. And every state-changing action writes to an immutable audit log.
+
+14
+00:09:53,200 --> 00:10:44,800
+To wrap up: RentalPro went from a requirements document, through design, to a working prototype, a full seven-chapter project report, 100% feature completion, and now an extended billing engine — and every number on this slide was produced by actually running the code, not estimated. 25 of 25 use cases, each with a route and a covering test. The 13-table design implemented exactly as specified. 202 tests, zero failures, 82 percent coverage. Eight feature gaps closed in Deliverable 5, and eight more billing capabilities added since. And the whole thing runs fully offline, with zero paid external accounts required to build or test it. That discipline — that a claim in the report is a fact about the system, not a target for it — is, I'd argue, as much a deliverable of this capstone as the application itself.
+
+15
+00:10:44,800 --> 00:11:28,800
+Looking ahead to Part 2 of the capstone: cloud file storage is the natural next step — and because photo and document storage is already isolated behind a small storage.py interface, that swap needs no changes to routes or templates. A mobile-optimized tenant portal is next, since tenants are the role most likely to use this from a phone. Alembic-based schema migrations would replace the create_all() bootstrap I used during development, which is fine pre-launch but not for a live database holding real tenant data. And finally, end-to-end verification against live Stripe, SendGrid, and Twilio sandbox accounts, on top of the offline test suite that's carried the project so far.
+
+16
+00:11:28,800 --> 00:11:47,600
+Thank you. That's RentalPro — a fully-implemented, fully-tested digital rental management system covering all six deliverables from requirements through the final demo and presentation package, plus an extended billing engine on top. I'm happy to take any questions — about a specific design decision, the test suite, the security model, or anything you'd like to see demonstrated again.

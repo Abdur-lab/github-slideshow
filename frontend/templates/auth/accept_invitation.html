@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Set Up Your Account — RentalPro{% endblock %}
+{% block auth_content %}
+<h1>Welcome, {{ invitation.name }}</h1>
+<p class="text-muted">Complete your tenant profile to finish setting up your account.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="national_id">National ID</label>
+    <input type="text" id="national_id" name="national_id" required>
+  </div>
+  <div class="field">
+    <label for="phone">Phone number</label>
+    <input type="text" id="phone" name="phone">
+  </div>
+  <div class="field">
+    <label for="emergency_contact">Emergency contact</label>
+    <input type="text" id="emergency_contact" name="emergency_contact">
+  </div>
+  <div class="field">
+    <label for="password">Choose a password</label>
+    <input type="password" id="password" name="password" minlength="8" required>
+  </div>
+  <button class="btn" type="submit" style="width:100%">Create my account</button>
+</form>
+{% endblock %}

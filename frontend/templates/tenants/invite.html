@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Invite Tenant — RentalPro{% endblock %}
+{% block content %}
+<h1>Invite Tenant{% if unit %} to Unit {{ unit.unit_code }}{% endif %}</h1>
+<p class="text-muted">Sends a secure self-registration link, valid for 48 hours.</p>
+<div class="card" style="max-width:500px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if unit %}<input type="hidden" name="unit_id" value="{{ unit.id }}">{% endif %}
+    <div class="field">
+      <label for="name">Tenant name</label>
+      <input type="text" id="name" name="name" value="{{ form.get('name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="email">Email address</label>
+      <input type="email" id="email" name="email" value="{{ form.get('email', '') }}" required>
+    </div>
+    <button class="btn" type="submit">Send Invitation</button>
+    {% if unit %}<a href="{{ url_for('properties.detail', property_id=unit.property_id) }}" class="btn btn-secondary">Cancel</a>{% endif %}
+  </form>
+</div>
+{% endblock %}

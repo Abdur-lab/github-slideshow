@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}Dashboard — RentalPro{% endblock %}
+{% block content %}
+<h1>Portfolio Dashboard</h1>
+
+<div class="grid grid-4 mt-1">
+  <div class="stat-tile"><div class="label">Total Units</div><div class="value">{{ summary.total_units }}</div></div>
+  <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ summary.occupancy_rate }}%</div></div>
+  <div class="stat-tile"><div class="label">Rent Collected</div><div class="value">{{ "%.2f"|format(summary.rent_collected) }}</div></div>
+  <div class="stat-tile"><div class="label">Outstanding Balance</div><div class="value">{{ "%.2f"|format(summary.rent_outstanding) }}</div></div>
+</div>
+
+<div class="grid grid-2 mt-1">
+  <div class="card">
+    <h3>Leases Expiring Within 30 Days</h3>
+    {% if expiring %}
+    <table>
+      <thead><tr><th>Tenant</th><th>Unit</th><th>End Date</th></tr></thead>
+      <tbody>
+      {% for lease in expiring %}
+        <tr>
+          <td><a href="{{ url_for('tenants.detail', tenant_id=lease.tenant_id) }}">{{ lease.tenant.user.full_name }}</a></td>
+          <td>{{ lease.unit.unit_code }}</td>
+          <td>{{ lease.end_date }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No leases expiring soon.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Open Maintenance Requests</h3>
+    {% if open_maintenance %}
+    <table>
+      <thead><tr><th>Ticket</th><th>Title</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for req in open_maintenance %}
+        <tr>
+          <td><a href="{{ url_for('maintenance.detail', request_id=req.id) }}">{{ req.ticket_number }}</a></td>
+          <td>{{ req.title }}</td>
+          <td>{{ status_badge(req.status) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No open maintenance requests.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="flex-between">
+    <h3 style="margin:0">Your Properties</h3>
+    <a href="{{ url_for('properties.index') }}" class="btn btn-secondary btn-sm">View all</a>
+  </div>
+  <table class="mt-1">
+    <thead><tr><th>Name</th><th>Code</th><th>Occupancy</th></tr></thead>
+    <tbody>
+    {% for p in properties %}
+      <tr>
+        <td><a href="{{ url_for('properties.detail', property_id=p.id) }}">{{ p.name }}</a></td>
+        <td>{{ p.property_code }}</td>
+        <td>{{ p.occupancy_rate }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
