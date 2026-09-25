@@ -88,17 +88,35 @@ a:hover { text-decoration: underline; }
 
 .auth-page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1d4ed8, #111827);
+  background: var(--bg);
+}
+.hero-band {
+  background: linear-gradient(160deg, #22c55e, #15803d);
+  color: #fff;
+  text-align: center;
+  padding: 4.5rem 1.5rem 6rem;
+  border-radius: 0 0 50% 50% / 0 0 40px 40px;
+}
+.hero-band .brand-mark {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.hero-band .hero-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+  opacity: 0.92;
 }
 .auth-card {
   background: var(--surface);
   padding: 2.25rem;
   border-radius: 12px;
   width: 380px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  margin: -60px auto 3rem;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
 }
 .auth-card h1 { font-size: 1.4rem; margin-top: 0; }
 
