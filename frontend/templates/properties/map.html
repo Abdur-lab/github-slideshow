@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Properties Map — RentalPro{% endblock %}
+{% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <h1>Properties Map</h1>
+  <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">List View</a>
+</div>
+
+{% if located %}
+<div class="card mt-1">
+  <div id="portfolio-map" class="map-container map-portfolio"></div>
+</div>
+<script id="portfolio-map-data" type="application/json">
+[{% for p in located %}{"name": {{ p.name|tojson }}, "code": {{ p.property_code|tojson }}, "occupancy": {{ p.occupancy_rate }}, "lat": {{ p.latitude }}, "lng": {{ p.longitude }}, "url": {{ url_for('properties.detail', property_id=p.id)|tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]
+</script>
+{% if located|length < properties|length %}
+<p class="map-hint mt-1">{{ properties|length - located|length }} of {{ properties|length }} propert{{ 'y has' if properties|length - located|length == 1 else 'ies have' }} no map location set yet — add coordinates from the property's Edit page to show it here.</p>
+{% endif %}
+{% else %}
+<div class="empty-state">
+  <p>No properties have a map location set yet.</p>
+  <p class="text-muted">Add coordinates from a property's Add or Edit page to see it here.</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_scripts %}
+{% include "properties/_leaflet_scripts.html" %}
+<script src="{{ url_for('static', filename='js/portfolio-map.js') }}"></script>
+{% endblock %}

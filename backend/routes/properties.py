@@ -57,6 +57,14 @@ def index():
     return render_template("properties/list.html", properties=properties)
 
 
+@bp.route("/map")
+@role_required(*MANAGEMENT_ROLES)
+def map_view():
+    properties = _visible_query(current_user()).order_by(Property.name).all()
+    located = [p for p in properties if p.has_location]
+    return render_template("properties/map.html", properties=properties, located=located)
+
+
 @bp.route("/add", methods=["GET", "POST"])
 @role_required(ROLE_ADMIN, ROLE_OWNER)
 def add():
@@ -70,6 +78,8 @@ def add():
         description = request.form.get("description", "").strip()
         late_fee_type = request.form.get("late_fee_type", "NONE")
         late_fee_amount = request.form.get("late_fee_amount") or "0"
+        latitude = request.form.get("latitude", "").strip()
+        longitude = request.form.get("longitude", "").strip()
         owner = current_user()
 
         errors = []
@@ -87,6 +97,10 @@ def add():
             late_fee_type = "NONE"
         if late_fee_type != "NONE" and not validate("positive_float", late_fee_amount):
             errors.append("Late fee amount must be a positive number when a late fee type is selected.")
+        if bool(latitude) != bool(longitude):
+            errors.append("Set both latitude and longitude, or leave the map location blank.")
+        elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
+            errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
         photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         if errors:
@@ -106,6 +120,8 @@ def add():
             property_code=Property.generate_property_code(),
             late_fee_type=late_fee_type,
             late_fee_amount=float(late_fee_amount or 0) if late_fee_type != "NONE" else 0.0,
+            latitude=float(latitude) if latitude else None,
+            longitude=float(longitude) if longitude else None,
         )
         db.session.add(prop)
         db.session.flush()
@@ -182,6 +198,8 @@ def edit(property_id):
         late_fee_type = request.form.get("late_fee_type", "NONE")
         late_fee_amount = request.form.get("late_fee_amount") or "0"
         electricity_rate = request.form.get("electricity_rate") or "0"
+        latitude = request.form.get("latitude", "").strip()
+        longitude = request.form.get("longitude", "").strip()
 
         errors = []
         if late_fee_type not in LATE_FEE_TYPES:
@@ -195,6 +213,10 @@ def edit(property_id):
         except (TypeError, ValueError):
             errors.append("Electricity rate must be a non-negative number.")
             electricity_rate_val = prop.electricity_rate
+        if bool(latitude) != bool(longitude):
+            errors.append("Set both latitude and longitude, or leave the map location blank.")
+        elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
+            errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
         new_photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         existing = len(prop.photo_paths or [])
@@ -209,6 +231,8 @@ def edit(property_id):
         prop.late_fee_type = late_fee_type
         prop.late_fee_amount = float(late_fee_amount or 0) if late_fee_type != "NONE" else 0.0
         prop.electricity_rate = electricity_rate_val
+        prop.latitude = float(latitude) if latitude else None
+        prop.longitude = float(longitude) if longitude else None
         if new_photos:
             saved = save_uploads(new_photos, f"properties/{prop.id}", MAX_PROPERTY_PHOTOS)
             prop.photo_paths = list(prop.photo_paths or []) + saved

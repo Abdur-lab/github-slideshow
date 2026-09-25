@@ -145,6 +145,16 @@ def validate(kind: str, value) -> bool:
         return bool(value) and len(value) >= 8
     if kind == "max200":
         return bool(value) and len(value) <= 200
+    if kind == "latitude":
+        try:
+            return -90 <= float(value) <= 90
+        except (TypeError, ValueError):
+            return False
+    if kind == "longitude":
+        try:
+            return -180 <= float(value) <= 180
+        except (TypeError, ValueError):
+            return False
     raise ValueError(f"Unknown validation kind: {kind}")
 
 

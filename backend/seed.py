@@ -55,6 +55,8 @@ def run_seed():
         currency="USD",
         description="A mid-size residential building with 6 units.",
         property_code=Property.generate_property_code(),
+        latitude=25.1124,
+        longitude=55.1390,
     )
     property2 = Property(
         owner_id=owner.id,
@@ -65,6 +67,8 @@ def run_seed():
         type="COMMERCIAL",
         currency="USD",
         property_code=Property.generate_property_code(),
+        latitude=25.1972,
+        longitude=55.2744,
     )
     db.session.add_all([property1, property2])
     db.session.flush()
