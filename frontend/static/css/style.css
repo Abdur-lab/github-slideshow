@@ -26,28 +26,41 @@ body {
 a { color: var(--brand); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-.app-shell { display: flex; min-height: 100vh; }
+.app-shell { min-height: 100vh; }
 
-.sidebar {
-  width: 230px;
+.topnav {
   background: #111827;
   color: #e5e7eb;
-  flex-shrink: 0;
-  padding: 1.25rem 0.75rem;
+  padding: 0 1rem;
 }
-.sidebar .brand { font-weight: 700; font-size: 1.15rem; color: #fff; padding: 0 0.5rem 1.25rem; display: block; }
-.sidebar nav a {
+.topnav-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0;
+}
+.topnav .brand { font-weight: 700; font-size: 1.15rem; color: #fff; flex-shrink: 0; }
+.topnav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.topnav-links a {
   display: block;
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.7rem;
   border-radius: var(--radius);
   color: #cbd5e1;
-  margin-bottom: 2px;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
-.sidebar nav a:hover { background: #1f2937; text-decoration: none; }
-.sidebar nav a.active { background: var(--brand); color: #fff; }
-.sidebar .role-badge {
-  margin: 0 0.5rem 1rem;
+.topnav-links a:hover { background: #1f2937; text-decoration: none; }
+.topnav-links a.active { background: var(--brand); color: #fff; }
+.topnav .role-badge {
+  flex-shrink: 0;
   display: inline-block;
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -57,17 +70,21 @@ a:hover { text-decoration: underline; }
   padding: 2px 8px;
   border-radius: 12px;
 }
-
-.main { flex: 1; min-width: 0; }
-.topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0.85rem 1.5rem;
+.topnav-user {
+  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  color: #cbd5e1;
 }
+
 .content { padding: 1.5rem; max-width: 1200px; }
+
+@media (max-width: 900px) {
+  .topnav-row { padding: 0.75rem 0; }
+  .topnav-user { width: 100%; justify-content: space-between; }
+}
 
 .auth-page {
   min-height: 100vh;
