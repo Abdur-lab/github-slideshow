@@ -88,14 +88,18 @@ a:hover { text-decoration: underline; }
 
 .auth-page {
   min-height: 100vh;
-  background: var(--bg);
+  display: flex;
 }
 .hero-band {
-  background: linear-gradient(160deg, #22c55e, #15803d);
+  width: 50%;
+  background: linear-gradient(160deg, #9d174d, #4a0e21);
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 4.5rem 1.5rem 6rem;
-  border-radius: 0 0 50% 50% / 0 0 40px 40px;
+  padding: 2rem;
 }
 .hero-band .brand-mark {
   font-size: 2.75rem;
@@ -108,17 +112,46 @@ a:hover { text-decoration: underline; }
   font-size: 1.05rem;
   opacity: 0.92;
 }
+.auth-panel {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 2rem;
+}
 .auth-card {
   background: var(--surface);
-  padding: 2.25rem;
-  border-radius: 12px;
+  padding: 2.5rem;
+  border-radius: 16px;
   width: 380px;
-  margin: -60px auto 3rem;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  max-width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
-.auth-card h1 { font-size: 1.4rem; margin-top: 0; }
+.auth-card h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 1.5rem; }
+.auth-card input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.auth-card input:focus {
+  outline: none;
+  border-color: #9d174d;
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.15);
+}
+.auth-card .btn {
+  border-radius: 10px;
+  background: linear-gradient(160deg, #9d174d, #7a1240);
+  border-color: #9d174d;
+  transition: box-shadow 0.15s ease, transform 0.05s ease;
+}
+.auth-card .btn:hover { background: linear-gradient(160deg, #b91c5c, #8b1449); box-shadow: 0 8px 18px rgba(157, 23, 77, 0.3); }
+.auth-card .btn:active { transform: translateY(1px); }
+
+@media (max-width: 800px) {
+  .auth-page { flex-direction: column; }
+  .hero-band, .auth-panel { width: 100%; }
+  .hero-band { padding: 2.5rem 1.5rem; }
+  .auth-panel { flex: 1; padding: 2rem 1.5rem 3rem; }
+}
 
 .card {
   background: var(--surface);

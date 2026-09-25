@@ -53,9 +53,11 @@
     <div class="brand-mark">RentalPro</div>
     <p class="hero-tagline">Digital Rental Management System</p>
   </div>
-  <div class="auth-card">
-    {% include "_flashes.html" %}
-    {% block auth_content %}{% endblock %}
+  <div class="auth-panel">
+    <div class="auth-card">
+      {% include "_flashes.html" %}
+      {% block auth_content %}{% endblock %}
+    </div>
   </div>
 </div>
 {% endif %}
