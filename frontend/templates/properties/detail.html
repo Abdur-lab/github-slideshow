@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import status_badge %}
 {% block title %}{{ property.name }} — RentalPro{% endblock %}
+{% block extra_head %}{% if property.has_location %}{% include "properties/_leaflet_head.html" %}{% endif %}{% endblock %}
 {% block content %}
 <div class="flex-between">
   <div>
@@ -25,6 +26,14 @@
   <div class="stat-tile"><div class="label">Vacant</div><div class="value">{{ units|selectattr('status', 'equalto', 'VACANT')|list|length }}</div></div>
   <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ property.occupancy_rate }}%</div></div>
 </div>
+
+{% if property.has_location %}
+<div class="card">
+  <h3>Location</h3>
+  <div id="property-detail-map" class="map-container map-detail" data-map-static
+       data-lat="{{ property.latitude }}" data-lng="{{ property.longitude }}"></div>
+</div>
+{% endif %}
 
 {% if property.photo_paths %}
 <div class="card">
@@ -113,4 +122,10 @@
     <button class="btn btn-sm" type="submit">Add Expense</button>
   </form>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+{% if property.has_location %}
+{% include "properties/_leaflet_scripts.html" %}
+<script src="{{ url_for('static', filename='js/map-picker.js') }}"></script>
+{% endif %}
 {% endblock %}

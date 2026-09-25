@@ -107,6 +107,8 @@ class Property(db.Model):
     late_fee_type = db.Column(db.String(10), nullable=False, default="NONE")
     late_fee_amount = db.Column(db.Float, nullable=False, default=0)
     electricity_rate = db.Column(db.Float, nullable=False, default=0)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     units = db.relationship("Unit", backref="property", cascade="all, delete-orphan", lazy="dynamic")
@@ -130,6 +132,10 @@ class Property(db.Model):
             return 0.0
         occupied = sum(1 for u in units if u.status == "OCCUPIED")
         return round((occupied / len(units)) * 100, 1)
+
+    @property
+    def has_location(self) -> bool:
+        return self.latitude is not None and self.longitude is not None
 
 
 class Unit(db.Model):

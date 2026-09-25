@@ -188,6 +188,20 @@ All of the above ship with photo/document upload validation (magic-byte
 checks reused from the existing PDF validator, extended to JPEG/PNG) and
 are covered by `tests/test_deliverable5.py` (31 tests).
 
+## Property Map
+
+Every property can carry an optional `latitude`/`longitude`. Set it by
+clicking a map on the Add/Edit Property forms (or typing coordinates
+directly); a property's own Detail page then shows a small pin, and
+`/properties/map` shows every located property in the portfolio on one
+map, with a popup linking back to each property.
+
+Leaflet's JS/CSS/marker icons are vendored into `frontend/static/vendor/leaflet/`
+rather than pulled from a CDN, keeping the app's own assets self-contained —
+the only thing that needs a live internet connection is the OpenStreetMap
+map tiles themselves, which is unavoidable for any real map. Covered by
+`tests/test_property_map.py` (8 tests).
+
 ## Security Controls
 
 - **Password hashing** — `pbkdf2:sha256` with 600,000 iterations (Werkzeug).

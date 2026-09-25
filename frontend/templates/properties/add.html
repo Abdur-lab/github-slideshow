@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Add Property — RentalPro{% endblock %}
+{% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
 <h1>Add New Property</h1>
 <div class="card" style="max-width:600px">
@@ -52,6 +53,18 @@
       </div>
     </div>
     <div class="field">
+      <label>Map location (optional)</label>
+      <div class="grid grid-2">
+        <input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" placeholder="Latitude" value="{{ form.get('latitude', '') }}">
+        <input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" placeholder="Longitude" value="{{ form.get('longitude', '') }}">
+      </div>
+      <div id="add-property-map" class="map-container map-picker mt-1" data-map-picker
+           data-lat-input="latitude" data-lng-input="longitude"
+           data-default-lat="25.2048" data-default-lng="55.2708" data-default-zoom="11"
+           data-clear-button="clear-location"></div>
+      <p class="map-hint">Click the map to drop a pin, or type coordinates directly. <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">Clear location</button></p>
+    </div>
+    <div class="field">
       <label for="photos">Property photos (up to 10, JPG/PNG, max 5 MB each)</label>
       <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
     </div>
@@ -59,4 +72,8 @@
     <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">Cancel</a>
   </form>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+{% include "properties/_leaflet_scripts.html" %}
+<script src="{{ url_for('static', filename='js/map-picker.js') }}"></script>
 {% endblock %}

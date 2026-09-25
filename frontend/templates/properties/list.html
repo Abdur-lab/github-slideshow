@@ -4,9 +4,12 @@
 {% block content %}
 <div class="flex-between">
   <h1>Properties</h1>
-  {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER') %}
-  <a href="{{ url_for('properties.add') }}" class="btn">+ Add New Property</a>
-  {% endif %}
+  <div>
+    <a href="{{ url_for('properties.map_view') }}" class="btn btn-secondary">View on Map</a>
+    {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER') %}
+    <a href="{{ url_for('properties.add') }}" class="btn">+ Add New Property</a>
+    {% endif %}
+  </div>
 </div>
 
 {% if properties %}

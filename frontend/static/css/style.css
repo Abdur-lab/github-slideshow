@@ -155,3 +155,16 @@ textarea { resize: vertical; min-height: 80px; }
 .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .mt-1 { margin-top: 1rem; }
+
+.map-container {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.map-container.map-picker { height: 260px; }
+.map-container.map-detail { height: 220px; }
+.map-container.map-portfolio { height: 520px; }
+.map-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+.map-popup h4 { margin: 0 0 0.2rem; }
+.map-popup a { font-size: 0.85rem; }
