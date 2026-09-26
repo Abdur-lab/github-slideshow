@@ -29,6 +29,23 @@ def test_sidebar_brand_links_to_each_roles_home(client, owner, staff, tenant):
     assert b'href="/portal" class="brand"' in client.get("/portal").data
 
 
+@pytest.mark.parametrize("path", ["/", "/login", "/forgot-password"])
+def test_logged_in_user_is_sent_home_from_logged_out_pages(client, owner, tenant, path):
+    login(client, "owner@test.com")
+    resp = client.get(path, follow_redirects=True)
+    assert b"Portfolio Dashboard" in resp.data
+
+    login(client, "tenant@test.com")
+    resp = client.get(path, follow_redirects=True)
+    assert b"Welcome" in resp.data
+
+
+def test_login_page_still_shows_when_logged_out(client):
+    resp = client.get("/login")
+    assert resp.status_code == 200
+    assert b"Log in" in resp.data
+
+
 def test_login_wrong_password(client, owner):
     resp = client.post("/login", data={"email": "owner@test.com", "password": "not-the-password"}, follow_redirects=True)
     assert b"Invalid email or password" in resp.data
