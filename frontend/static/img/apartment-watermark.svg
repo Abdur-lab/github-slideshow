@@ -97,4 +97,8 @@
 <circle cx="122.0" cy="354.0" r="13.0" fill="#1e3a8a"/>
 <rect x="328.3" y="366.4" width="3.4" height="13.6" fill="#1e3a8a"/>
 <circle cx="330.0" cy="357.9" r="11.0" fill="#1e3a8a"/>
+<rect x="319.0" y="0.0" width="2" height="70.0" fill="#1e3a8a"/>
+<polygon points="316.0,70.0 324.0,70.0 336.0,92.0 304.0,92.0" fill="#1e3a8a"/>
+<circle cx="320.0" cy="101.0" r="7" fill="#7a1240"/>
+<circle cx="320.0" cy="101.0" r="16" fill="#7a1240" opacity="0.25"/>
 </svg>
