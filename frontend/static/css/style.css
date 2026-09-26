@@ -115,8 +115,8 @@ a:hover { text-decoration: underline; }
 .auth-panel {
   width: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: var(--bg);
   padding: 2rem;
   position: relative;
@@ -133,20 +133,17 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
   user-select: none;
 }
-.auth-panel-spacer { flex: 1; }
-.light-cord {
-  flex: 1;
-  width: 2px;
-  min-height: 20px;
-  background: #1e3a8a;
-}
-.light-fixture {
-  width: 40px;
-  height: 46px;
-  margin-bottom: -2px;
+.ceiling-light {
+  position: absolute;
+  top: 0;
+  z-index: 0;
+  opacity: 0.5;
   pointer-events: none;
   user-select: none;
 }
+.ceiling-light-1 { left: 14%; width: 34px; }
+.ceiling-light-2 { left: 47%; width: 38px; }
+.ceiling-light-3 { left: 78%; width: 32px; }
 .auth-card {
   position: relative;
   z-index: 1;
