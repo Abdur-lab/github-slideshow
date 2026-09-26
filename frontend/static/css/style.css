@@ -29,7 +29,7 @@ a:hover { text-decoration: underline; }
 .app-shell { min-height: 100vh; }
 
 .topnav {
-  background: #111827;
+  background: linear-gradient(90deg, #1e3a8a 0%, #5b1e4a 55%, #7a1240 100%);
   color: #e5e7eb;
   padding: 0 1rem;
 }
@@ -57,16 +57,16 @@ a:hover { text-decoration: underline; }
   font-size: 0.9rem;
   white-space: nowrap;
 }
-.topnav-links a:hover { background: #1f2937; text-decoration: none; }
-.topnav-links a.active { background: var(--brand); color: #fff; }
+.topnav-links a:hover { background: rgba(255, 255, 255, 0.14); text-decoration: none; }
+.topnav-links a.active { background: rgba(255, 255, 255, 0.28); color: #fff; }
 .topnav .role-badge {
   flex-shrink: 0;
   display: inline-block;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #1f2937;
-  color: #93c5fd;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
   padding: 2px 8px;
   border-radius: 12px;
 }
@@ -92,7 +92,7 @@ a:hover { text-decoration: underline; }
 }
 .hero-band {
   width: 50%;
-  background: linear-gradient(160deg, #9d174d, #4a0e21);
+  background: linear-gradient(160deg, #1e3a8a 0%, #5b1e4a 55%, #7a1240 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
