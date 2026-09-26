@@ -133,6 +133,17 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
   user-select: none;
 }
+.ceiling-light {
+  position: absolute;
+  top: 0;
+  z-index: 0;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+.ceiling-light-1 { left: 14%; width: 34px; }
+.ceiling-light-2 { left: 47%; width: 38px; }
+.ceiling-light-3 { left: 78%; width: 32px; }
 .auth-card {
   position: relative;
   z-index: 1;
