@@ -17,6 +17,17 @@ from backend.services.notifications import send_email
 
 bp = Blueprint("auth", __name__)
 
+# Pages that only make sense when logged out. They render into the auth layout,
+# which base.html skips for a logged-in user, so they would show up blank.
+LOGGED_OUT_ONLY = {"auth.login", "auth.forgot_password", "auth.reset_password", "auth.accept_invitation"}
+
+
+@bp.before_request
+def redirect_logged_in_users():
+    user = current_user()
+    if user and request.method == "GET" and request.endpoint in LOGGED_OUT_ONLY:
+        return redirect(home_url(user))
+
 
 @bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
