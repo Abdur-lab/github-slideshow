@@ -129,7 +129,8 @@ a:hover { text-decoration: underline; }
   width: 85%;
   min-width: 520px;
   max-width: 820px;
-  opacity: 0.07;
+  opacity: 0.16;
+  filter: grayscale(1) contrast(1.05);
   pointer-events: none;
   user-select: none;
 }
