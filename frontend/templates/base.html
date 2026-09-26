@@ -55,10 +55,14 @@
   </div>
   <div class="auth-panel">
     <img src="{{ url_for('static', filename='img/apartment-watermark.svg') }}" class="auth-watermark" alt="">
+    <div class="auth-panel-spacer"></div>
+    <div class="light-cord"></div>
+    <img src="{{ url_for('static', filename='img/hanging-light.svg') }}" class="light-fixture" alt="">
     <div class="auth-card">
       {% include "_flashes.html" %}
       {% block auth_content %}{% endblock %}
     </div>
+    <div class="auth-panel-spacer"></div>
   </div>
 </div>
 {% endif %}
