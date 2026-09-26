@@ -29,11 +29,28 @@ def create_app(config_class=Config):
     for bp in ALL_BLUEPRINTS:
         app.register_blueprint(bp)
 
-    from backend.security import current_user, home_url
+    from backend.i18n import LANGUAGES, current_language, translate
+    from backend.security import current_user, home_url, safe_next_url
+
+    # A Jinja global (not just a context variable) so imported macro files can translate too.
+    app.jinja_env.globals["_"] = translate
 
     @app.context_processor
     def inject_globals():
-        return {"current_user": current_user(), "home_url": home_url}
+        return {
+            "current_user": current_user(),
+            "home_url": home_url,
+            "current_lang": current_language(),
+            "languages": LANGUAGES,
+        }
+
+    @app.route("/lang/<code>")
+    def set_language(code):
+        from flask import redirect, request, session, url_for
+
+        if code in LANGUAGES:
+            session["lang"] = code
+        return redirect(safe_next_url(request.args.get("next"), url_for("root")))
 
     @app.errorhandler(403)
     def forbidden(_e):

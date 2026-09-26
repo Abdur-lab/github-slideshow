@@ -30,14 +30,21 @@ def current_user():
     return user
 
 
-def login_user(user: User) -> None:
+def _clear_session_keeping_language() -> None:
+    lang = session.get("lang")
     session.clear()
+    if lang:
+        session["lang"] = lang
+
+
+def login_user(user: User) -> None:
+    _clear_session_keeping_language()
     session["user_id"] = user.id
     session.permanent = True
 
 
 def logout_user() -> None:
-    session.clear()
+    _clear_session_keeping_language()
 
 
 def home_url(user: User) -> str:

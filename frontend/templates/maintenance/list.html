@@ -2,11 +2,11 @@
 {% from "macros.html" import status_badge, severity_badge %}
 {% block title %}Maintenance — RentalPro{% endblock %}
 {% block content %}
-<h1>{% if current_user.role == 'MAINTENANCE_STAFF' %}My Work Queue{% else %}Maintenance Requests{% endif %}</h1>
+<h1>{% if current_user.role == 'MAINTENANCE_STAFF' %}{{ _('My Work Queue') }}{% else %}{{ _('Maintenance Requests') }}{% endif %}</h1>
 {% if requests %}
 <div class="card mt-1">
   <table>
-    <thead><tr><th>Ticket</th><th>Title</th><th>Unit</th><th>Severity</th><th>Status</th><th>Assigned</th></tr></thead>
+    <thead><tr><th>{{ _('Ticket') }}</th><th>{{ _('Title') }}</th><th>{{ _('Unit') }}</th><th>{{ _('Severity') }}</th><th>{{ _('Status') }}</th><th>{{ _('Assigned') }}</th></tr></thead>
     <tbody>
     {% for req in requests %}
       <tr>
@@ -14,7 +14,7 @@
         <td>{{ req.title }}</td>
         <td>{{ req.unit.unit_code }}</td>
         <td>{{ severity_badge(req.severity) }}</td>
-        <td>{{ status_badge(req.status) }}{% if req.is_overdue %} <span class="badge badge-red">Overdue</span>{% endif %}</td>
+        <td>{{ status_badge(req.status) }}{% if req.is_overdue %} <span class="badge badge-red">{{ _('Overdue') }}</span>{% endif %}</td>
         <td>{{ req.assignee.full_name if req.assignee else "—" }}</td>
       </tr>
     {% endfor %}
@@ -22,6 +22,6 @@
   </table>
 </div>
 {% else %}
-<div class="empty-state"><p>No maintenance requests.</p></div>
+<div class="empty-state"><p>{{ _('No maintenance requests.') }}</p></div>
 {% endif %}
 {% endblock %}

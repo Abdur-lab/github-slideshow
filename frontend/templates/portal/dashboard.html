@@ -2,31 +2,31 @@
 {% from "macros.html" import status_badge %}
 {% block title %}My Dashboard — RentalPro{% endblock %}
 {% block content %}
-<h1>Welcome, {{ tenant.user.full_name }}</h1>
+<h1>{{ _('Welcome, {name}', name=tenant.user.full_name) }}</h1>
 
 {% if lease %}
 <div class="grid grid-3 mt-1">
-  <div class="stat-tile"><div class="label">Unit</div><div class="value" style="font-size:1.1rem">{{ lease.unit.property.name }} &middot; Unit {{ lease.unit.unit_number }}</div></div>
-  <div class="stat-tile"><div class="label">Monthly Rent</div><div class="value">{{ "%.2f"|format(lease.current_monthly_rent) }}</div></div>
-  <div class="stat-tile"><div class="label">Balance Due</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Unit') }}</div><div class="value" style="font-size:1.1rem">{{ _('{property} · Unit {unit}', property=lease.unit.property.name, unit=lease.unit.unit_number) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Monthly Rent') }}</div><div class="value">{{ "%.2f"|format(lease.current_monthly_rent) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Balance Due') }}</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
 </div>
 {% if lease.balance > 0 %}
-<div class="card mt-1"><a class="btn" href="{{ url_for('portal.pay') }}">Pay Rent Now</a></div>
+<div class="card mt-1"><a class="btn" href="{{ url_for('portal.pay') }}">{{ _('Pay Rent Now') }}</a></div>
 {% endif %}
-<div class="card mt-1"><a class="btn btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">View Full Account Statement</a></div>
+<div class="card mt-1"><a class="btn btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">{{ _('View Full Account Statement') }}</a></div>
 {% if lease.document_path %}
-<div class="card mt-1"><a class="btn btn-secondary" href="{{ url_for('tenants.lease_document', tenant_id=tenant.id, lease_id=lease.id) }}" target="_blank">Download My Lease PDF</a></div>
+<div class="card mt-1"><a class="btn btn-secondary" href="{{ url_for('tenants.lease_document', tenant_id=tenant.id, lease_id=lease.id) }}" target="_blank">{{ _('Download My Lease PDF') }}</a></div>
 {% endif %}
 {% else %}
-<div class="empty-state"><p>You do not have an active lease on file. Please contact your property manager.</p></div>
+<div class="empty-state"><p>{{ _('You do not have an active lease on file. Please contact your property manager.') }}</p></div>
 {% endif %}
 
 <div class="grid grid-2 mt-1">
   <div class="card">
-    <h3>Recent Payments</h3>
+    <h3>{{ _('Recent Payments') }}</h3>
     {% if recent_payments %}
     <table>
-      <thead><tr><th>Date</th><th>Amount</th><th>Receipt #</th></tr></thead>
+      <thead><tr><th>{{ _('Date') }}</th><th>{{ _('Amount') }}</th><th>{{ _('Receipt #') }}</th></tr></thead>
       <tbody>
       {% for p in recent_payments %}
         <tr><td>{{ p.paid_at.date() }}</td><td>{{ "%.2f"|format(p.amount) }}</td><td>{{ p.receipt_number }}</td></tr>
@@ -34,17 +34,17 @@
       </tbody>
     </table>
     {% else %}
-    <p class="text-muted">No payments yet.</p>
+    <p class="text-muted">{{ _('No payments yet.') }}</p>
     {% endif %}
   </div>
   <div class="card">
     <div class="flex-between">
-      <h3 style="margin:0">My Maintenance Requests</h3>
-      <a href="{{ url_for('maintenance.add') }}" class="btn btn-sm">+ New Request</a>
+      <h3 style="margin:0">{{ _('My Maintenance Requests') }}</h3>
+      <a href="{{ url_for('maintenance.add') }}" class="btn btn-sm">{{ _('+ New Request') }}</a>
     </div>
     {% if requests %}
     <table class="mt-1">
-      <thead><tr><th>Ticket</th><th>Title</th><th>Status</th></tr></thead>
+      <thead><tr><th>{{ _('Ticket') }}</th><th>{{ _('Title') }}</th><th>{{ _('Status') }}</th></tr></thead>
       <tbody>
       {% for r in requests %}
         <tr>
@@ -56,7 +56,7 @@
       </tbody>
     </table>
     {% else %}
-    <p class="text-muted">No maintenance requests yet.</p>
+    <p class="text-muted">{{ _('No maintenance requests yet.') }}</p>
     {% endif %}
   </div>
 </div>

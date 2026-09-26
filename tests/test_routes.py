@@ -161,7 +161,7 @@ def test_tenant_portal_shows_property_name_and_unit_number(client, db, active_le
     login(client, active_lease.tenant.user.email)
     for path in ("/portal", "/portal/pay"):
         resp = client.get(path)
-        assert b"Test Towers &middot; Unit 101" in resp.data
+        assert "Test Towers · Unit 101".encode() in resp.data
         assert active_lease.unit.unit_code.encode() not in resp.data
 
 
