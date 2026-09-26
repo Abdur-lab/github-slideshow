@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Pay Rent</h1>
 <div class="card" style="max-width:480px">
-  <p><strong>Unit:</strong> {{ lease.unit.unit_code }}</p>
+  <p><strong>Unit:</strong> {{ lease.unit.property.name }} &middot; Unit {{ lease.unit.unit_number }}</p>
   <p><strong>Amount due:</strong> {{ "%.2f"|format(lease.balance) }}</p>
   {% if lease.balance > 0 %}
   <form method="post">
