@@ -27,6 +27,15 @@ a { color: var(--brand); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 .app-shell { min-height: 100vh; }
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("../img/city-watermark.webp") center / cover no-repeat;
+  opacity: 0.12;
+  z-index: -1;
+  pointer-events: none;
+}
 
 .topnav {
   background: linear-gradient(90deg, #5a6fa8 0%, #7e5a78 55%, #94587a 100%);
