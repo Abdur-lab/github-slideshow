@@ -32,10 +32,15 @@ a:hover { text-decoration: underline; }
   position: fixed;
   inset: 0;
   background: url("../img/city-watermark.webp") center / cover no-repeat;
-  opacity: 0.12;
+  opacity: 0.45;
   z-index: -1;
   pointer-events: none;
 }
+.app-shell.wm-properties::before { background-image: url("../img/harare-aerial.webp"); }
+.app-shell.wm-tenants::before,
+.app-shell.wm-rent::before,
+.app-shell.wm-maintenance::before,
+.app-shell.wm-portal::before { background-image: url("../img/harare-night-street.webp"); }
 
 .topnav {
   background: linear-gradient(90deg, #5a6fa8 0%, #7e5a78 55%, #94587a 100%);

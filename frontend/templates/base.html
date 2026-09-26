@@ -9,7 +9,7 @@
 </head>
 <body>
 {% if current_user %}
-<div class="app-shell">
+<div class="app-shell wm-{{ request.blueprint }}">
   <header class="topnav">
     <div class="topnav-row">
       <a href="{{ home_url(current_user) }}" class="brand">RentalPro</a>
