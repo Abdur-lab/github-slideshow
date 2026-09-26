@@ -157,6 +157,14 @@ def test_pay_rent_online_dev_mode_end_to_end(client, db, active_lease):
     assert payment is not None
 
 
+def test_tenant_portal_shows_property_name_and_unit_number(client, db, active_lease):
+    login(client, active_lease.tenant.user.email)
+    for path in ("/portal", "/portal/pay"):
+        resp = client.get(path)
+        assert b"Test Towers &middot; Unit 101" in resp.data
+        assert active_lease.unit.unit_code.encode() not in resp.data
+
+
 def test_lease_statement_api_blocked_for_wrong_tenant(client, db, active_lease):
     from backend.models import ROLE_TENANT
 
