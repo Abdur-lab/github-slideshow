@@ -49,19 +49,14 @@
 </div>
 {% else %}
 <div class="auth-page">
-  <div class="hero-band">
+  <img src="{{ url_for('static', filename='img/city-watermark.webp') }}" class="auth-bg-photo" alt="">
+  <div class="auth-brand">
     <div class="brand-mark">RentalPro</div>
     <p class="hero-tagline">Digital Rental Management System</p>
   </div>
-  <div class="auth-panel">
-    <img src="{{ url_for('static', filename='img/apartment-watermark.svg') }}" class="auth-watermark" alt="">
-    <img src="{{ url_for('static', filename='img/light-cone.svg') }}" class="ceiling-light ceiling-light-1" alt="">
-    <img src="{{ url_for('static', filename='img/light-dome.svg') }}" class="ceiling-light ceiling-light-2" alt="">
-    <img src="{{ url_for('static', filename='img/light-globe.svg') }}" class="ceiling-light ceiling-light-3" alt="">
-    <div class="auth-card">
-      {% include "_flashes.html" %}
-      {% block auth_content %}{% endblock %}
-    </div>
+  <div class="auth-card">
+    {% include "_flashes.html" %}
+    {% block auth_content %}{% endblock %}
   </div>
 </div>
 {% endif %}
