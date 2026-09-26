@@ -75,7 +75,46 @@ def run_seed():
         latitude=-17.8290,
         longitude=31.0490,
     )
-    db.session.add_all([property1, property2])
+    property3 = Property(
+        owner_id=owner.id,
+        name="Julius Nyerere Business Centre",
+        address="78 Julius Nyerere Way",
+        city="Harare",
+        country="Zimbabwe",
+        type="MIXED",
+        currency="USD",
+        description="Offices and ground-floor shops in the Harare CBD.",
+        property_code=Property.generate_property_code(),
+        latitude=-17.8316,
+        longitude=31.0457,
+    )
+    property4 = Property(
+        owner_id=owner.id,
+        name="Eastlea Garden Flats",
+        address="18 Glenara Avenue South, Eastlea",
+        city="Harare",
+        country="Zimbabwe",
+        type="RESIDENTIAL",
+        currency="USD",
+        description="Walk-up studio and one-bedroom flats in Eastlea.",
+        property_code=Property.generate_property_code(),
+        latitude=-17.8235,
+        longitude=31.0735,
+    )
+    property5 = Property(
+        owner_id=owner.id,
+        name="Vainona Park Townhouses",
+        address="12 Vainona Drive, Vainona",
+        city="Harare",
+        country="Zimbabwe",
+        type="RESIDENTIAL",
+        currency="USD",
+        description="Three-bedroom townhouses in a gated complex in Vainona.",
+        property_code=Property.generate_property_code(),
+        latitude=-17.7445,
+        longitude=31.0835,
+    )
+    db.session.add_all([property1, property2, property3, property4, property5])
     db.session.flush()
 
     units = []
@@ -102,6 +141,29 @@ def run_seed():
             unit_code=Unit.generate_unit_code(property2.property_code, f"S{i}"),
         )
         units.append(u)
+    for prop, unit_number, unit_type, size, rent in [
+        (property3, "O1", "OFFICE", 60.0, 1200.0),
+        (property3, "O2", "OFFICE", 60.0, 1200.0),
+        (property3, "S1", "SHOP", 45.0, 1400.0),
+        (property4, "1", "STUDIO", 30.0, 450.0),
+        (property4, "2", "STUDIO", 30.0, 450.0),
+        (property4, "3", "1BR", 45.0, 600.0),
+        (property4, "4", "1BR", 45.0, 600.0),
+        (property5, "T1", "3BR", 160.0, 1800.0),
+        (property5, "T2", "3BR", 160.0, 1800.0),
+        (property5, "T3", "3BR", 160.0, 1800.0),
+    ]:
+        units.append(
+            Unit(
+                property_id=prop.id,
+                unit_number=unit_number,
+                type=unit_type,
+                size_sqm=size,
+                monthly_rent=rent,
+                deposit=rent,
+                unit_code=Unit.generate_unit_code(prop.property_code, unit_number),
+            )
+        )
     db.session.add_all(units)
     db.session.flush()
 
@@ -146,4 +208,4 @@ def run_seed():
     db.session.add(MaintenanceCost(request_id=request1.id, category="MATERIALS", amount=25.0, recorded_by=manager.id, description="Replacement washer"))
 
     db.session.commit()
-    print("Seeded: 5 users, 2 properties, 6 units, 1 lease, 1 payment, 1 maintenance request.")
+    print("Seeded: 5 users, 5 properties, 16 units, 1 lease, 1 payment, 1 maintenance request.")
