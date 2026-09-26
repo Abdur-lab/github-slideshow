@@ -28,47 +28,52 @@ def run_seed():
         print("Seed data already present, skipping.")
         return
 
-    admin = User(email="admin@rentalpro.com", first_name="Amir", last_name="Admin", role=ROLE_ADMIN)
+    admin = User(email="admin@rentalpro.com", first_name="Abdur-Rahmaan", last_name="Ali", role=ROLE_ADMIN)
     admin.set_password(DEMO_PASSWORD)
-    owner = User(email="owner@rentalpro.com", first_name="Olivia", last_name="Owner", role=ROLE_OWNER)
+    owner = User(email="owner@rentalpro.com", first_name="Tendai", last_name="Moyo", role=ROLE_OWNER)
     owner.set_password(DEMO_PASSWORD)
-    manager = User(email="manager@rentalpro.com", first_name="Marco", last_name="Manager", role=ROLE_MANAGER)
+    manager = User(email="manager@rentalpro.com", first_name="Rutendo", last_name="Chikore", role=ROLE_MANAGER)
     manager.set_password(DEMO_PASSWORD)
-    staff = User(email="staff@rentalpro.com", first_name="Sam", last_name="Staff", role=ROLE_STAFF)
+    staff = User(email="staff@rentalpro.com", first_name="Farai", last_name="Ncube", role=ROLE_STAFF)
     staff.set_password(DEMO_PASSWORD)
-    tenant_user = User(email="tenant1@email.com", first_name="Tara", last_name="Tenant", role=ROLE_TENANT)
+    tenant_user = User(email="tenant1@email.com", first_name="Chipo", last_name="Mutasa", role=ROLE_TENANT)
     tenant_user.set_password(DEMO_PASSWORD)
     db.session.add_all([admin, owner, manager, staff, tenant_user])
     db.session.flush()
 
-    tenant = Tenant(user_id=tenant_user.id, national_id="ID-100200300", phone="+1-555-0100", emergency_contact="John Tenant +1-555-0101")
+    tenant = Tenant(
+        user_id=tenant_user.id,
+        national_id="63-2145789 K 42",
+        phone="+263 77 214 5789",
+        emergency_contact="Tafadzwa Mutasa +263 71 330 4412",
+    )
     db.session.add(tenant)
     db.session.flush()
 
     property1 = Property(
         owner_id=owner.id,
-        name="Sunrise Apartments",
-        address="12 Palm Street",
-        city="Dubai",
-        country="UAE",
+        name="Avondale Heights",
+        address="14 King George Road, Avondale",
+        city="Harare",
+        country="Zimbabwe",
         type="RESIDENTIAL",
         currency="USD",
-        description="A mid-size residential building with 6 units.",
+        description="A mid-size residential block in Avondale, close to Avondale Shopping Centre.",
         property_code=Property.generate_property_code(),
-        latitude=25.1124,
-        longitude=55.1390,
+        latitude=-17.7936,
+        longitude=31.0380,
     )
     property2 = Property(
         owner_id=owner.id,
-        name="Downtown Retail Row",
-        address="45 Market Ave",
-        city="Dubai",
-        country="UAE",
+        name="Samora Machel Retail Row",
+        address="45 Samora Machel Avenue",
+        city="Harare",
+        country="Zimbabwe",
         type="COMMERCIAL",
         currency="USD",
         property_code=Property.generate_property_code(),
-        latitude=25.1972,
-        longitude=55.2744,
+        latitude=-17.8290,
+        longitude=31.0490,
     )
     db.session.add_all([property1, property2])
     db.session.flush()
