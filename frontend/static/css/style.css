@@ -29,7 +29,7 @@ a:hover { text-decoration: underline; }
 .app-shell { min-height: 100vh; }
 
 .topnav {
-  background: linear-gradient(90deg, #1e3a8a 0%, #5b1e4a 55%, #7a1240 100%);
+  background: linear-gradient(90deg, #5a6fa8 0%, #7e5a78 55%, #94587a 100%);
   color: #e5e7eb;
   padding: 0 1rem;
 }
@@ -53,7 +53,7 @@ a:hover { text-decoration: underline; }
   display: block;
   padding: 0.5rem 0.7rem;
   border-radius: var(--radius);
-  color: #cbd5e1;
+  color: #f8fafc;
   font-size: 0.9rem;
   white-space: nowrap;
 }
@@ -76,8 +76,9 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 0.75rem;
   font-size: 0.88rem;
-  color: #cbd5e1;
+  color: #f8fafc;
 }
+.topnav-user .text-muted { color: rgba(255, 255, 255, 0.75); }
 
 .content { padding: 1.5rem; max-width: 1200px; }
 
