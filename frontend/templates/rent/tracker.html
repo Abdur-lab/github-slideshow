@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Rent Tracker — RentalPro{% endblock %}
 {% block content %}
-<h1>Rent Tracker</h1>
+<h1>{{ _('Rent Tracker') }}</h1>
 {% if leases %}
 <div class="card mt-1">
   <table>
-    <thead><tr><th>Tenant</th><th>Unit</th><th>Monthly Rent</th><th>Balance</th><th></th></tr></thead>
+    <thead><tr><th>{{ _('Tenant') }}</th><th>{{ _('Unit') }}</th><th>{{ _('Monthly Rent') }}</th><th>{{ _('Balance') }}</th><th></th></tr></thead>
     <tbody>
     {% for lease in leases %}
       <tr>
         <td><a href="{{ url_for('tenants.detail', tenant_id=lease.tenant_id) }}">{{ lease.tenant.user.full_name }}</a></td>
         <td>{{ lease.unit.unit_code }}</td>
         <td>{{ "%.2f"|format(lease.current_monthly_rent) }}</td>
-        <td>{% if lease.balance > 0 %}<span class="badge badge-red">{{ "%.2f"|format(lease.balance) }}</span>{% else %}<span class="badge badge-green">Paid up</span>{% endif %}</td>
+        <td>{% if lease.balance > 0 %}<span class="badge badge-red">{{ "%.2f"|format(lease.balance) }}</span>{% else %}<span class="badge badge-green">{{ _('Paid up') }}</span>{% endif %}</td>
         <td>
-          <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">Record Payment</a>
-          <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">History</a>
+          <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">{{ _('Record Payment') }}</a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">{{ _('History') }}</a>
         </td>
       </tr>
     {% endfor %}
@@ -23,6 +23,6 @@
   </table>
 </div>
 {% else %}
-<div class="empty-state"><p>No active leases.</p></div>
+<div class="empty-state"><p>{{ _('No active leases.') }}</p></div>
 {% endif %}
 {% endblock %}
