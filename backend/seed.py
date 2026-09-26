@@ -1,5 +1,5 @@
 """Demo data matching the credentials documented in Deliverable 3, Appendix C."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from backend.extensions import db
 from backend.models import (
@@ -207,5 +207,61 @@ def run_seed():
     db.session.flush()
     db.session.add(MaintenanceCost(request_id=request1.id, category="MATERIALS", amount=25.0, recorded_by=manager.id, description="Replacement washer"))
 
+    # More Harare tenants across the portfolio. Each pays every month due so
+    # far, except those with months_behind > 0, who are that many months in arrears.
+    unit_at = {(u.property_id, u.unit_number): u for u in units}
+    extra_tenants = [
+        # (email, first, last, national_id, phone, emergency contact, property, unit, days since lease start, months behind, payment method)
+        ("tenant2@email.com", "Tatenda", "Chiweshe", "63-1874520 F 18", "+263 77 318 4520", "Rudo Chiweshe +263 71 552 0913", property4, "1", 150, 0, "ONLINE"),
+        ("tenant3@email.com", "Nyasha", "Mapfumo", "08-2231984 H 25", "+263 78 224 1984", "Farai Mapfumo +263 77 902 1175", property4, "3", 95, 1, "CASH"),
+        ("tenant4@email.com", "Kudakwashe", "Sibanda", "29-1150362 P 07", "+263 71 115 0362", "Thandeka Sibanda +263 78 640 2231", property5, "T1", 240, 0, "BANK_TRANSFER"),
+        ("tenant5@email.com", "Rumbidzai", "Marufu", "63-2790451 Q 42", "+263 77 279 0451", "Tonderai Marufu +263 71 118 7760", property5, "T2", 60, 0, "BANK_TRANSFER"),
+        ("tenant6@email.com", "Simbarashe", "Dube", "58-0942716 D 13", "+263 78 094 2716", "Chiedza Dube +263 77 431 6628", property3, "O1", 300, 0, "BANK_TRANSFER"),
+        ("tenant7@email.com", "Precious", "Ndlovu", "08-1627735 L 08", "+263 71 162 7735", "Sipho Ndlovu +263 78 115 9942", property3, "S1", 130, 1, "CHEQUE"),
+        ("tenant8@email.com", "Blessing", "Makoni", "63-3318845 W 50", "+263 77 331 8845", "Ruvimbo Makoni +263 71 820 3317", property2, "S1", 210, 0, "BANK_TRANSFER"),
+        ("tenant9@email.com", "Munyaradzi", "Zvobgo", "75-2046193 T 22", "+263 78 204 6193", "Vimbai Zvobgo +263 77 665 0184", property1, "102", 45, 0, "ONLINE"),
+    ]
+    extra_payments = 0
+    for email, first, last, national_id, phone, emergency, prop, unit_number, days_in, months_behind, method in extra_tenants:
+        user = User(email=email, first_name=first, last_name=last, role=ROLE_TENANT)
+        user.set_password(DEMO_PASSWORD)
+        db.session.add(user)
+        db.session.flush()
+        t = Tenant(user_id=user.id, national_id=national_id, phone=phone, emergency_contact=emergency)
+        db.session.add(t)
+        db.session.flush()
+
+        unit = unit_at[(prop.id, unit_number)]
+        start = date.today() - timedelta(days=days_in)
+        extra_lease = Lease(
+            unit_id=unit.id,
+            tenant_id=t.id,
+            start_date=start,
+            end_date=start + timedelta(days=365),
+            monthly_rent=unit.monthly_rent,
+            deposit=unit.deposit,
+            due_day=1,
+        )
+        unit.status = "OCCUPIED"
+        db.session.add(extra_lease)
+        db.session.flush()
+
+        periods_due = round(extra_lease.total_due_to_date() / extra_lease.monthly_rent)
+        for i in range(max(0, periods_due - months_behind)):
+            db.session.add(
+                RentPayment(
+                    lease_id=extra_lease.id,
+                    amount=extra_lease.monthly_rent,
+                    method=method,
+                    receipt_number=RentPayment.generate_receipt_number(),
+                    paid_at=datetime.combine(extra_lease.first_due_date(), datetime.min.time()) + timedelta(days=30 * i),
+                    recorded_by=manager.id,
+                )
+            )
+            extra_payments += 1
+
     db.session.commit()
-    print("Seeded: 5 users, 5 properties, 16 units, 1 lease, 1 payment, 1 maintenance request.")
+    print(
+        f"Seeded: {5 + len(extra_tenants)} users, 5 properties, 16 units, {1 + len(extra_tenants)} leases, "
+        f"{1 + extra_payments} payments, 1 maintenance request."
+    )
