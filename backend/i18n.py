@@ -3,6 +3,11 @@
 Templates wrap user-facing text in ``_("...")``. English is the source
 language; when the session language is Shona the phrase is looked up in
 SHONA and falls back to the English text if it has not been translated yet.
+
+Only the app's own interface text is translated. Data is never passed
+through ``_()``: property names, street addresses, suburbs, cities and
+countries (e.g. "Avondale Heights", "Samora Machel Avenue", "Harare") read
+the same in every language. tests/test_i18n.py checks this.
 """
 from flask import session
 
