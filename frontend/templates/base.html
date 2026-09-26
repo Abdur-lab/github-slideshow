@@ -54,6 +54,7 @@
     <p class="hero-tagline">Digital Rental Management System</p>
   </div>
   <div class="auth-panel">
+    <img src="{{ url_for('static', filename='img/apartment-watermark.svg') }}" class="auth-watermark" alt="">
     <div class="auth-card">
       {% include "_flashes.html" %}
       {% block auth_content %}{% endblock %}
