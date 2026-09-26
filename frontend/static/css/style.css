@@ -144,6 +144,16 @@ a:hover { text-decoration: underline; }
 .ceiling-light-1 { left: 14%; width: 34px; }
 .ceiling-light-2 { left: 47%; width: 38px; }
 .ceiling-light-3 { left: 78%; width: 32px; }
+.floor-buildings {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 0;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
 .auth-card {
   position: relative;
   z-index: 1;
