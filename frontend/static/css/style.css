@@ -124,7 +124,9 @@ a:hover { text-decoration: underline; }
 .auth-card {
   position: relative;
   z-index: 1;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 2.5rem;
   border-radius: 16px;
   width: 380px;
