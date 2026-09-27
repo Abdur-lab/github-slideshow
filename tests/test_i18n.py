@@ -56,3 +56,49 @@ def test_every_shona_entry_keeps_its_placeholders():
 
     for english, shona in SHONA.items():
         assert set(re.findall(r"{(\w+)}", english)) == set(re.findall(r"{(\w+)}", shona)), english
+
+
+def test_location_names_are_never_translated(client, db, owner, tenant):
+    """Property names, street addresses, suburbs, cities and countries are data, not
+    interface text, so they must read exactly the same in Shona as in English."""
+    from datetime import date, timedelta
+
+    from backend.models import Lease, Property, Unit
+
+    prop = Property(
+        owner_id=owner.id,
+        name="Eastlea Garden Flats",
+        address="45 Samora Machel Avenue, Eastlea",
+        city="Harare",
+        country="Zimbabwe",
+        property_code=Property.generate_property_code(),
+        latitude=-17.8235,
+        longitude=31.0735,
+    )
+    db.session.add(prop)
+    db.session.flush()
+    unit = Unit(property_id=prop.id, unit_number="3", monthly_rent=600.0, deposit=600.0,
+                unit_code=Unit.generate_unit_code(prop.property_code, "3"), status="OCCUPIED")
+    db.session.add(unit)
+    db.session.flush()
+    db.session.add(Lease(unit_id=unit.id, tenant_id=tenant.id, start_date=date.today() - timedelta(days=10),
+                         end_date=date.today() + timedelta(days=355), monthly_rent=600.0, deposit=600.0))
+    db.session.commit()
+
+    location_text = ["Eastlea Garden Flats", "45 Samora Machel Avenue, Eastlea", "Harare", "Zimbabwe"]
+
+    client.get("/lang/sn")
+    login(client, "owner@test.com")
+    for path in ("/dashboard", "/properties", "/properties/map", "/reports"):
+        html = client.get(path).get_data(as_text=True)
+        assert "Eastlea Garden Flats" in html, path
+    properties_page = client.get("/properties").get_data(as_text=True)
+    for text in location_text:
+        assert text in properties_page, text
+
+    login(client, tenant.user.email)
+    for path in ("/portal", "/portal/pay"):
+        assert "Eastlea Garden Flats · Yuniti 3" in client.get(path).get_data(as_text=True), path
+
+    for text in location_text:
+        assert text not in SHONA, f"{text!r} is a place name and must not have a Shona translation"

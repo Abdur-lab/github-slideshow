@@ -50,7 +50,8 @@ backend/
   models.py               13 SQLAlchemy models + business logic (balances, occupancy, numbering)
   security.py              auth, RBAC, IDOR guard, input validation, audit log
   scheduler_jobs.py         the 4 background jobs (UC-11, UC-14, UC-15, UC-23)
-  seed.py                    demo data (matches credentials below)
+  seed.py                    Harare demo data (matches credentials below)
+  i18n.py                     English/Shona interface translation
   routes/                     auth, dashboard, properties, tenants, rent, portal, maintenance, reports, api
   services/                    notifications.py, payments.py, pdf.py, reports.py
 frontend/
@@ -63,6 +64,7 @@ tests/
   test_routes.py                    end-to-end feature flows for all 25 use cases
   test_scheduler.py                 the 4 background jobs, invoked directly
   test_validation.py                validate(), validate_upload(), Stripe HMAC, idempotency
+  test_i18n.py                      English/Shona switch, place names never translated
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
 ```
@@ -134,13 +136,47 @@ checkout, so the whole app is exercisable offline.
 
 ## Demo Credentials
 
-| Email | Password | Role |
+All demo accounts use the password `demo123`.
+
+| Email | Name | Role |
 |---|---|---|
-| admin@rentalpro.com | demo123 | ADMIN — user & role management, bypasses ownership checks |
-| owner@rentalpro.com | demo123 | PROPERTY_OWNER — full management access |
-| manager@rentalpro.com | demo123 | PROPERTY_MANAGER — management (no property creation) |
-| tenant1@email.com | demo123 | TENANT — self-service portal only |
-| staff@rentalpro.com | demo123 | MAINTENANCE_STAFF — work queue only |
+| admin@rentalpro.com | Abdur-Rahmaan Ali | ADMIN — user & role management, bypasses ownership checks |
+| owner@rentalpro.com | Tendai Moyo | PROPERTY_OWNER — full management access |
+| manager@rentalpro.com | Rutendo Chikore | PROPERTY_MANAGER — management (no property creation) |
+| staff@rentalpro.com | Farai Ncube | MAINTENANCE_STAFF — work queue only |
+| tenant1@email.com … tenant9@email.com | Chipo Mutasa and eight others | TENANT — self-service portal only |
+
+## Demo Data
+
+`flask seed-db` loads a Harare portfolio into an empty database:
+
+| Property | Area | Type | Units | Let |
+|---|---|---|---|---|
+| Avondale Heights | Avondale | Residential | 4 | 2 |
+| Samora Machel Retail Row | CBD | Commercial | 2 shops | 1 |
+| Julius Nyerere Business Centre | CBD | Mixed | 2 offices, 1 shop | 2 |
+| Eastlea Garden Flats | Eastlea | Residential | 2 studios, 2 one-bed | 2 |
+| Vainona Park Townhouses | Vainona | Residential | 3 townhouses | 2 |
+
+That is 16 units, 9 active leases (56% occupancy), a payment history for
+every lease, and three tenants in arrears, so the rent tracker, reports and
+dashboards all have realistic figures. Every property has map coordinates.
+The seed only runs on an empty database: delete `rentalpro.db` (or the
+Postgres volume) to reload it.
+
+## Language: English / Shona
+
+An **EN | SN** switch sits in the top bar and on the login page. The choice
+is kept in the session and survives logging in and out. `backend/i18n.py`
+holds the Shona phrases; templates wrap interface text in `_("...")`, and
+any phrase without a Shona entry falls back to English.
+
+Translated: navigation for every role, login and password reset, the
+portfolio dashboard, the properties, tenants, rent tracker and maintenance
+lists, the tenant dashboard and Pay Rent page, and status badges. Other
+pages and flash messages are still English only. Data is never translated:
+property names, addresses, suburbs, cities and people's names read the same
+in both languages, which `tests/test_i18n.py` checks.
 
 ## Run the Test Suite
 
@@ -156,8 +192,8 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 204 tests (204 passed, 0 skipped on the latest run),
-0 failures, 83% statement coverage across `backend/` (`pytest --cov=backend`).
+**Current results:** 226 tests (226 passed, 0 skipped on the latest run),
+0 failures, 82% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.
@@ -210,8 +246,8 @@ map tiles themselves, which is unavoidable for any real map. Covered by
   acting user may access the specific resource, not just the route.
 - **CSRF** — Flask-WTF `CSRFProtect`, exempted only for the Stripe webhook.
 - **Account lockout** — 5 failed logins locks the account for 15 minutes.
-- **Open-redirect protection** — the login `next=` parameter is validated
-  (netloc and scheme must be empty) before use.
+- **Open-redirect protection** — the login and language-switch `next=`
+  parameters are validated (netloc and scheme must be empty) before use.
 - **Stripe webhook verification** — manual `t=<ts>,v1=<hmac>` HMAC check
   with a 300-second replay window, independent of the Stripe SDK's own
   verifier so it's unit-testable offline; idempotent on `gateway_ref`.
