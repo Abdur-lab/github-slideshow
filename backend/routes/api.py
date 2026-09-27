@@ -1,12 +1,11 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from backend.extensions import csrf, db
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_TENANT, Lease, Notification, Property, RentPayment
+from backend.models import MANAGEMENT_ROLES, ROLE_OWNER, ROLE_TENANT, Lease, Notification, Property, RentPayment
 from backend.security import assert_tenant_self, audit_log, current_user, role_required
 from backend.services.payments import record_idempotent_payment, verify_stripe_signature
 from backend.services.reports import portfolio_performance
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
 bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -14,7 +13,7 @@ bp = Blueprint("api", __name__, url_prefix="/api/v1")
 @bp.route("/leases/<lease_id>/statement")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def lease_statement(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     assert_tenant_self(lease.tenant_id)
     payments = lease.payments.order_by(RentPayment.paid_at).all()
     return jsonify(

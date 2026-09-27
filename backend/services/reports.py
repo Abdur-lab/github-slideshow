@@ -3,7 +3,6 @@ maintenance cost summaries (UC-24 / UC-25)."""
 from datetime import date, datetime, time, timedelta
 
 from backend.models import Lease, MaintenanceCost, MaintenanceRequest, Property, PropertyExpense, RentPayment, Unit
-from backend.extensions import db
 
 
 def property_performance(property_obj: Property, start: date = None, end: date = None) -> dict:
@@ -13,7 +12,7 @@ def property_performance(property_obj: Property, start: date = None, end: date =
 
     unit_ids = [u.id for u in units]
     leases = Lease.query.filter(Lease.unit_id.in_(unit_ids)).all() if unit_ids else []
-    lease_ids = [l.id for l in leases]
+    lease_ids = [lease.id for lease in leases]
 
     payments_q = RentPayment.query.filter(RentPayment.lease_id.in_(lease_ids)) if lease_ids else RentPayment.query.filter(False)
     if start:
@@ -22,7 +21,7 @@ def property_performance(property_obj: Property, start: date = None, end: date =
         payments_q = payments_q.filter(RentPayment.paid_at <= end)
     total_collected = round(sum(p.amount for p in payments_q.all()), 2)
 
-    total_outstanding = round(sum(l.balance for l in leases if l.status == "ACTIVE"), 2)
+    total_outstanding = round(sum(lease.balance for lease in leases if lease.status == "ACTIVE"), 2)
 
     requests = MaintenanceRequest.query.filter(MaintenanceRequest.unit_id.in_(unit_ids)).all() if unit_ids else []
     request_ids = [r.id for r in requests]

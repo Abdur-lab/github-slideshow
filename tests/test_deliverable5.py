@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 import openpyxl
 
-from backend.models import ROLE_ADMIN, ROLE_OWNER, ROLE_TENANT, MaintenanceRequest, Property, RentPayment, Tenant, Unit, User
+from backend.models import ROLE_OWNER, ROLE_TENANT, MaintenanceRequest, RentPayment, Tenant, User
 from tests.conftest import login
 
 MINIMAL_JPG = b"\xff\xd8\xff\xe0" + b"\x00" * 20

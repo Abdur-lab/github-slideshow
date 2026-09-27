@@ -1,14 +1,14 @@
-from datetime import date, datetime
+from datetime import date
 
 from flask import Blueprint, Response, flash, render_template, request
 
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Property
+from backend.extensions import db
+from backend.models import MANAGEMENT_ROLES, ROLE_OWNER, Property
 from backend.security import assert_owner, audit_log, current_user, role_required
 from backend.services.excel import render_portfolio_report_xlsx
 from backend.services.pdf import render_property_report_pdf
 from backend.services.reports import maintenance_summary, portfolio_performance, property_performance
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
 bp = Blueprint("reports", __name__, url_prefix="/reports")
 
@@ -48,7 +48,7 @@ def index():
     property_id = request.args.get("property_id")
     if property_id:
         assert_owner(property_id)
-        prop = Property.query.get_or_404(property_id)
+        prop = db.get_or_404(Property, property_id)
         summary = property_performance(prop)
     else:
         prop = None
@@ -66,7 +66,7 @@ def export_pdf():
     property_id = request.args.get("property_id")
     if property_id:
         assert_owner(property_id)
-        prop = Property.query.get_or_404(property_id)
+        prop = db.get_or_404(Property, property_id)
         summary = property_performance(prop)
         pdf_bytes = render_property_report_pdf(prop, summary)
         filename = f"report-{prop.property_code}.pdf"
@@ -92,7 +92,7 @@ def export_xlsx():
     property_id = request.args.get("property_id")
     if property_id:
         assert_owner(property_id)
-        prop = Property.query.get_or_404(property_id)
+        prop = db.get_or_404(Property, property_id)
         prop_summary = property_performance(prop)
         summary = {**prop_summary, "properties": [prop_summary]}
         filename = f"report-{prop.property_code}.xlsx"

@@ -7,10 +7,8 @@ from sqlalchemy import and_, or_
 
 from backend.extensions import db
 from backend.models import (
+    MANAGEMENT_ROLES,
     CHARGE_TYPES,
-    ROLE_ADMIN,
-    ROLE_MANAGER,
-    ROLE_OWNER,
     ROLE_TENANT,
     Lease,
     LeaseCharge,
@@ -19,14 +17,12 @@ from backend.models import (
     RentInvoice,
     RentPayment,
     RentRevision,
-    Tenant,
     User,
 )
 from backend.security import assert_tenant_self, audit_log, current_user, role_required, validate
 from backend.services.notifications import send_email
 from backend.services.pdf import render_payment_receipt_pdf, render_rent_statement_pdf
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
 bp = Blueprint("rent", __name__, url_prefix="/rent")
 
@@ -35,7 +31,7 @@ bp = Blueprint("rent", __name__, url_prefix="/rent")
 @role_required(*MANAGEMENT_ROLES)
 def index():
     leases = Lease.query.filter_by(status="ACTIVE").all()
-    rows = sorted(leases, key=lambda l: l.balance, reverse=True)
+    rows = sorted(leases, key=lambda lease: lease.balance, reverse=True)
     return render_template("rent/tracker.html", leases=rows)
 
 
@@ -96,7 +92,7 @@ def record():
 @bp.route("/<lease_id>/history")
 @role_required(*MANAGEMENT_ROLES)
 def history(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     payments = lease.payments.order_by(RentPayment.paid_at.desc()).all()
     return render_template("rent/history.html", lease=lease, payments=payments)
 
@@ -104,7 +100,7 @@ def history(lease_id):
 @bp.route("/<lease_id>/history.csv")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def history_csv(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     assert_tenant_self(lease.tenant_id)
     payments = lease.payments.order_by(RentPayment.paid_at.asc()).all()
 
@@ -145,7 +141,7 @@ def _balance_after_payment(lease, payment) -> float:
 @bp.route("/payments/<payment_id>/receipt.pdf")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def payment_receipt(payment_id):
-    payment = RentPayment.query.get_or_404(payment_id)
+    payment = db.get_or_404(RentPayment, payment_id)
     lease = payment.lease
     assert_tenant_self(lease.tenant_id)
 
@@ -217,7 +213,7 @@ def _period_totals(lease, period_start, period_end):
 @bp.route("/<lease_id>/statement")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def statement(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     assert_tenant_self(lease.tenant_id)
 
     period_start, period_end, period_error = _parse_period(request.args)
@@ -255,7 +251,7 @@ def statement(lease_id):
 @bp.route("/<lease_id>/charges/add", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def add_charge(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     charge_type = request.form.get("charge_type", "OPERATIONAL")
     description = request.form.get("description", "").strip()
     amount = request.form.get("amount")
@@ -295,7 +291,7 @@ def add_charge(lease_id):
 @bp.route("/<lease_id>/meter/add-reading", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def add_meter_reading(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     unit = lease.unit
     reading_date_raw = request.form.get("reading_date")
     reading_value_raw = request.form.get("reading_value")
@@ -376,7 +372,7 @@ def add_meter_reading(lease_id):
 @bp.route("/<lease_id>/revise-rent", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def revise_rent(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     effective_date_raw = request.form.get("effective_date")
     monthly_rent = request.form.get("monthly_rent")
     reason = request.form.get("reason", "").strip()
@@ -421,7 +417,7 @@ def revise_rent(lease_id):
 @bp.route("/<lease_id>/statement.pdf")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def statement_pdf(lease_id):
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     assert_tenant_self(lease.tenant_id)
 
     period_start, period_end, _period_error = _parse_period(request.args)

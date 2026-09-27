@@ -1,6 +1,5 @@
 import pytest
 
-from backend.models import Property
 from tests.conftest import login
 
 

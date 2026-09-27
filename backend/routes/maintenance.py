@@ -1,14 +1,12 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
 from backend.models import (
+    MANAGEMENT_ROLES,
     MAINT_CATEGORIES,
     MAINT_SEVERITIES,
-    ROLE_ADMIN,
-    ROLE_MANAGER,
-    ROLE_OWNER,
     ROLE_STAFF,
     ROLE_TENANT,
     MaintenanceCost,
@@ -16,29 +14,14 @@ from backend.models import (
     MaintenanceRequest,
     User,
 )
-from backend.security import audit_log, current_user, role_required, validate, validate_upload
+from backend.security import audit_log, current_user, role_required, validate, validate_photos
 from backend.services.notifications import send_email, send_sms
 from backend.services.storage import save_uploads, serve_upload
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 MAX_OPEN_REQUESTS_PER_TENANT = 5
 MAX_REQUEST_PHOTOS = 3
-IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 bp = Blueprint("maintenance", __name__, url_prefix="/maintenance")
-
-
-def _valid_photos(files, max_count):
-    files = [f for f in files if f and f.filename][:max_count]
-    errors = []
-    valid = []
-    for f in files:
-        if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
-            valid.append(f)
-        else:
-            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not attached.')
-    return valid, errors
 
 
 @bp.route("")
@@ -83,7 +66,9 @@ def add():
             errors.append("Title is required.")
         if not description:
             errors.append("Description is required.")
-        photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_REQUEST_PHOTOS)
+        photos, photo_errors = validate_photos(
+            request.files.getlist("photos"), MAX_REQUEST_PHOTOS, action="attached", report_excess=False
+        )
         for e in photo_errors:
             flash(e, "warning")
         if errors:
@@ -134,7 +119,7 @@ def _can_view(req, user):
 @bp.route("/<request_id>")
 @role_required(*MANAGEMENT_ROLES, ROLE_STAFF, ROLE_TENANT)
 def detail(request_id):
-    req = MaintenanceRequest.query.get_or_404(request_id)
+    req = db.get_or_404(MaintenanceRequest, request_id)
     if not _can_view(req, current_user()):
         abort(403)
     staff = User.query.filter_by(role=ROLE_STAFF, is_active=True).all()
@@ -144,7 +129,7 @@ def detail(request_id):
 @bp.route("/<request_id>/update", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES, ROLE_STAFF, ROLE_TENANT)
 def update(request_id):
-    req = MaintenanceRequest.query.get_or_404(request_id)
+    req = db.get_or_404(MaintenanceRequest, request_id)
     user = current_user()
     if not _can_view(req, user):
         abort(403)
@@ -183,7 +168,9 @@ def update(request_id):
         req.status = "IN_PROGRESS" if action == "start" else "COMPLETED"
         if action == "complete":
             req.completed_at = datetime.utcnow()
-            photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_REQUEST_PHOTOS)
+            photos, photo_errors = validate_photos(
+                request.files.getlist("photos"), MAX_REQUEST_PHOTOS, action="attached", report_excess=False
+            )
             for e in photo_errors:
                 flash(e, "warning")
             if photos:
@@ -228,7 +215,7 @@ def update(request_id):
 @bp.route("/<request_id>/costs/add", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def add_cost(request_id):
-    req = MaintenanceRequest.query.get_or_404(request_id)
+    req = db.get_or_404(MaintenanceRequest, request_id)
     amount = request.form.get("amount")
     category = request.form.get("category", "OTHER")
     description = request.form.get("description", "").strip()
@@ -255,7 +242,7 @@ def add_cost(request_id):
 @bp.route("/<request_id>/photos/<path:relpath>")
 @role_required(*MANAGEMENT_ROLES, ROLE_STAFF, ROLE_TENANT)
 def photo(request_id, relpath):
-    req = MaintenanceRequest.query.get_or_404(request_id)
+    req = db.get_or_404(MaintenanceRequest, request_id)
     if not _can_view(req, current_user()):
         abort(403)
     full = f"maintenance/{request_id}/{relpath}"

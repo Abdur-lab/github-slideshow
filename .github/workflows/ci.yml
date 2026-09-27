@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Lint with ruff
+        run: pip install ruff==0.15.8 && ruff check .
+
       - name: Run test suite with coverage
         run: pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
 
