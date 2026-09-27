@@ -65,6 +65,7 @@ tests/
   test_scheduler.py                 the 4 background jobs, invoked directly
   test_validation.py                validate(), validate_upload(), Stripe HMAC, idempotency
   test_i18n.py                      English/Shona/Arabic, right-to-left, language menu, place names never translated
+  test_unit_history_and_maintenance_summary.py  tenant history per unit (FR-015), maintenance summary per period (FR-036)
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
 ```
@@ -199,8 +200,8 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 231 tests (231 passed, 0 skipped on the latest run),
-0 failures, 82% statement coverage across `backend/` (`pytest --cov=backend`).
+**Current results:** 244 tests (244 passed, 0 skipped on the latest run),
+0 failures, 83% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.

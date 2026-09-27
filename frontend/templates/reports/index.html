@@ -19,6 +19,10 @@
       {% endfor %}
     </select>
   </div>
+  {% if request.args.get('start') or request.args.get('end') %}
+  <input type="hidden" name="start" value="{{ maintenance.start }}">
+  <input type="hidden" name="end" value="{{ maintenance.end }}">
+  {% endif %}
 </form>
 
 {% if selected %}
@@ -67,4 +71,44 @@
   {% endif %}
 </div>
 {% endif %}
+
+<div class="card mt-1" id="maintenance-summary">
+  <div class="flex-between">
+    <h3>Maintenance Summary</h3>
+    <form method="get" action="{{ url_for('reports.index') }}#maintenance-summary" style="display:flex;gap:0.5rem;align-items:flex-end">
+      {% if selected %}<input type="hidden" name="property_id" value="{{ selected.id }}">{% endif %}
+      <div><label for="start">From</label><input type="date" id="start" name="start" value="{{ maintenance.start }}"></div>
+      <div><label for="end">To</label><input type="date" id="end" name="end" value="{{ maintenance.end }}"></div>
+      <button class="btn btn-secondary" type="submit">Apply</button>
+    </form>
+  </div>
+  <p class="text-muted">Requests raised between {{ maintenance.start }} and {{ maintenance.end }}, by their current stage. Open covers Submitted, Acknowledged and Assigned; Closed covers Completed and Closed.</p>
+  {% if maintenance.properties %}
+  <table>
+    <thead><tr><th>Property</th><th>Open</th><th>In Progress</th><th>Closed</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for row in maintenance.properties %}
+      <tr>
+        <td>{{ row.property_name }}</td>
+        <td>{{ row.open }}</td>
+        <td>{{ row.in_progress }}</td>
+        <td>{{ row.closed }}</td>
+        <td>{{ row.total }}</td>
+      </tr>
+    {% endfor %}
+    {% if maintenance.properties|length > 1 %}
+      <tr>
+        <td><strong>All properties</strong></td>
+        <td><strong>{{ maintenance.totals.open }}</strong></td>
+        <td><strong>{{ maintenance.totals.in_progress }}</strong></td>
+        <td><strong>{{ maintenance.totals.closed }}</strong></td>
+        <td><strong>{{ maintenance.totals.total }}</strong></td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No properties to report on.</p>
+  {% endif %}
+</div>
 {% endblock %}

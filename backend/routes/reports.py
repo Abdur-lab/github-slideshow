@@ -1,12 +1,12 @@
 from datetime import date, datetime
 
-from flask import Blueprint, Response, render_template, request
+from flask import Blueprint, Response, flash, render_template, request
 
 from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Property
 from backend.security import assert_owner, audit_log, current_user, role_required
 from backend.services.excel import render_portfolio_report_xlsx
 from backend.services.pdf import render_property_report_pdf
-from backend.services.reports import portfolio_performance, property_performance
+from backend.services.reports import maintenance_summary, portfolio_performance, property_performance
 
 MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
@@ -18,6 +18,26 @@ def _visible_properties(user):
     if user.role == ROLE_OWNER:
         q = q.filter_by(owner_id=user.id)
     return q.all()
+
+
+def _maintenance_period(args):
+    """The maintenance summary's date range from ?start=&end= (YYYY-MM-DD),
+    defaulting to the current month to date."""
+    today = date.today()
+    default = (today.replace(day=1), today)
+    raw_start, raw_end = args.get("start"), args.get("end")
+    if not raw_start and not raw_end:
+        return default
+    try:
+        start = date.fromisoformat(raw_start) if raw_start else default[0]
+        end = date.fromisoformat(raw_end) if raw_end else today
+    except ValueError:
+        flash("Dates must be in YYYY-MM-DD format; showing the current month instead.", "error")
+        return default
+    if start > end:
+        flash("The start date must be on or before the end date; showing the current month instead.", "error")
+        return default
+    return start, end
 
 
 @bp.route("")
@@ -33,8 +53,10 @@ def index():
     else:
         prop = None
         summary = portfolio_performance(properties)
+    start, end = _maintenance_period(request.args)
+    maintenance = maintenance_summary([prop] if prop else properties, start, end)
     audit_log("report_viewed", "Property", property_id)
-    return render_template("reports/index.html", properties=properties, selected=prop, summary=summary)
+    return render_template("reports/index.html", properties=properties, selected=prop, summary=summary, maintenance=maintenance)
 
 
 @bp.route("/export.pdf")

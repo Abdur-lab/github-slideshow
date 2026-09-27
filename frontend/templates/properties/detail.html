@@ -60,6 +60,7 @@
         <td>{{ status_badge(unit.status) }}</td>
         <td>
           <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.edit_unit', property_id=property.id, unit_id=unit.id) }}">Edit</a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.unit_history', property_id=property.id, unit_id=unit.id) }}">History</a>
           {% if unit.status == 'VACANT' %}
             <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.invite', unit_id=unit.id) }}">Invite Tenant</a>
             <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.add', unit_id=unit.id) }}">Create Tenant Profile</a>
