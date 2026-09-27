@@ -135,3 +135,14 @@ def test_location_names_are_never_translated(client, db, owner, tenant):
     for code, table in TRANSLATIONS.items():
         for text in location_text:
             assert text not in table, f"{text!r} is a place name and must not have a {code} translation"
+
+
+def test_language_menu_shows_the_current_language_and_lists_every_option(client):
+    import re
+
+    html = client.get("/lang/ar?next=/login", follow_redirects=True).get_data(as_text=True)
+    summary = re.search(r"<summary[^>]*>(.*?)</summary>", html, re.S).group(1)
+    assert "العربية" in summary and "English" not in summary
+    options = re.search(r'<ul class="lang-options"[^>]*>(.*?)</ul>', html, re.S).group(1)
+    assert re.findall(r'lang="(\w+)"', options) == ["en", "sn", "ar"]
+    assert re.search(r'lang="ar" class="active" aria-current="true"', options)
