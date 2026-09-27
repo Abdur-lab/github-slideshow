@@ -29,7 +29,7 @@ def create_app(config_class=Config):
     for bp in ALL_BLUEPRINTS:
         app.register_blueprint(bp)
 
-    from backend.i18n import LANGUAGES, current_language, translate
+    from backend.i18n import LANGUAGES, current_language, text_direction, translate
     from backend.security import current_user, home_url, safe_next_url
 
     # A Jinja global (not just a context variable) so imported macro files can translate too.
@@ -41,6 +41,7 @@ def create_app(config_class=Config):
             "current_user": current_user(),
             "home_url": home_url,
             "current_lang": current_language(),
+            "text_dir": text_direction(),
             "languages": LANGUAGES,
         }
 

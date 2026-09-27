@@ -1,16 +1,16 @@
-from backend.i18n import SHONA
+from backend.i18n import ARABIC, SHONA, TRANSLATIONS
 from tests.conftest import login
 
 
 def test_english_is_the_default(client):
     resp = client.get("/login")
-    assert b'<html lang="en">' in resp.data
+    assert b'<html lang="en" dir="ltr">' in resp.data
     assert b"Forgot your password?" in resp.data
 
 
 def test_switching_to_shona_translates_the_login_page(client):
     resp = client.get("/lang/sn?next=/login", follow_redirects=True)
-    assert b'<html lang="sn">' in resp.data
+    assert b'<html lang="sn" dir="ltr">' in resp.data
     assert "Wakanganwa pasiwedhi yako?".encode() in resp.data
     assert b"Forgot your password?" not in resp.data
 
@@ -42,7 +42,7 @@ def test_tenant_portal_in_shona(client, db, active_lease):
 
 def test_unknown_language_code_is_ignored(client):
     resp = client.get("/lang/xx?next=/login", follow_redirects=True)
-    assert b'<html lang="en">' in resp.data
+    assert b'<html lang="en" dir="ltr">' in resp.data
 
 
 def test_language_switch_does_not_open_redirect(client):
@@ -51,11 +51,37 @@ def test_language_switch_does_not_open_redirect(client):
     assert "evil.example.com" not in resp.headers["Location"]
 
 
-def test_every_shona_entry_keeps_its_placeholders():
+def test_every_translation_keeps_its_placeholders():
     import re
 
-    for english, shona in SHONA.items():
-        assert set(re.findall(r"{(\w+)}", english)) == set(re.findall(r"{(\w+)}", shona)), english
+    for table in TRANSLATIONS.values():
+        for english, translated in table.items():
+            assert set(re.findall(r"{(\w+)}", english)) == set(re.findall(r"{(\w+)}", translated)), english
+
+
+def test_arabic_covers_every_shona_phrase():
+    assert set(ARABIC) == set(SHONA)
+
+
+def test_switching_to_arabic_translates_and_turns_the_page_right_to_left(client):
+    resp = client.get("/lang/ar?next=/login", follow_redirects=True)
+    assert b'<html lang="ar" dir="rtl">' in resp.data
+    assert "هل نسيت كلمة المرور؟".encode() in resp.data
+    assert b"Forgot your password?" not in resp.data
+
+
+def test_english_and_shona_stay_left_to_right(client):
+    assert b'dir="ltr"' in client.get("/login").data
+    assert b'dir="ltr"' in client.get("/lang/sn?next=/login", follow_redirects=True).data
+
+
+def test_tenant_portal_in_arabic(client, db, active_lease):
+    client.get("/lang/ar")
+    login(client, active_lease.tenant.user.email)
+    html = client.get("/portal").get_data(as_text=True)
+    assert f"مرحبًا، {active_lease.tenant.user.full_name}" in html
+    assert "Test Towers · الوحدة 101" in html
+    assert "ادفع الإيجار الآن" in html
 
 
 def test_location_names_are_never_translated(client, db, owner, tenant):
@@ -100,5 +126,12 @@ def test_location_names_are_never_translated(client, db, owner, tenant):
     for path in ("/portal", "/portal/pay"):
         assert "Eastlea Garden Flats · Yuniti 3" in client.get(path).get_data(as_text=True), path
 
+    client.get("/lang/ar")
+    login(client, "owner@test.com")
+    properties_page = client.get("/properties").get_data(as_text=True)
     for text in location_text:
-        assert text not in SHONA, f"{text!r} is a place name and must not have a Shona translation"
+        assert text in properties_page, f"{text!r} changed in Arabic"
+
+    for code, table in TRANSLATIONS.items():
+        for text in location_text:
+            assert text not in table, f"{text!r} is a place name and must not have a {code} translation"
