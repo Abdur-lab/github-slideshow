@@ -1,72 +1,79 @@
 1
-00:00:00,541 --> 00:00:04,897
+00:00:00,553 --> 00:00:04,925
 RentalPro — Harare Portfolio Walkthrough — Signing in as Administrator Abdur-Rahmaan Ali (admin@rentalpro.com)
 
 2
-00:00:05,047 --> 00:00:10,290
+00:00:05,075 --> 00:00:10,327
 Portfolio Dashboard — Five Harare properties, 16 units, 56% occupied — rent collected and outstanding at a glance
 
 3
-00:00:10,440 --> 00:00:14,936
+00:00:10,477 --> 00:00:14,964
 Properties — Avondale, the CBD, Eastlea and Vainona — each section of the app has its own Harare photograph
 
 4
-00:00:15,086 --> 00:00:20,628
+00:00:15,114 --> 00:00:20,643
 Portfolio Map — Every located property is pinned; each pin links back to its property record
 
 5
-00:00:20,778 --> 00:00:27,891
+00:00:20,793 --> 00:00:27,898
 Avondale Heights — Units, occupancy and the property’s own location pin
 
 6
-00:00:28,041 --> 00:00:32,602
+00:00:28,048 --> 00:00:32,586
 Tenants — Nine Harare tenants — national IDs, units and balances in one list
 
 7
-00:00:32,752 --> 00:00:37,306
+00:00:32,736 --> 00:00:37,325
 Rent Tracker — Paid-up and overdue leases — Nyasha Mapfumo is one month ($600) behind
 
 8
-00:00:37,456 --> 00:00:43,782
+00:00:37,475 --> 00:00:43,780
 Recording a Payment — The manager records Nyasha’s $600 cash payment
 
 9
-00:00:43,932 --> 00:00:48,479
+00:00:43,930 --> 00:00:48,424
 Balance Cleared — Nyasha Mapfumo is now paid up — every payment gets a receipt number and an audit-log entry
 
 10
-00:00:48,629 --> 00:00:52,615
+00:00:48,574 --> 00:00:52,539
 Maintenance — The leaking-faucet ticket, assigned to maintenance staff member Farai Ncube
 
 11
-00:00:52,765 --> 00:00:59,612
+00:00:52,689 --> 00:00:59,518
 Reports — Collected, outstanding, expenses and net income for each property — exportable to Excel or PDF
 
 12
-00:00:59,762 --> 00:01:02,717
-English / Shona — The EN | SN switch in the top bar changes the whole interface to Shona
+00:00:59,668 --> 00:01:04,464
+Three Languages — The language button in the top bar opens a list: English, ChiShona and Arabic
 
 13
-00:01:02,867 --> 00:01:07,885
-Dhashibhodhi yeZvivakwa — Menus, headings, tiles and status badges in Shona — property and people’s names stay as entered
+00:01:04,614 --> 00:01:11,231
+Dhashibhodhi yeZvivakwa — Choosing ChiShona: menus, headings, tiles and badges in Shona — property and people’s names stay as entered
 
 14
-00:01:08,035 --> 00:01:13,296
-The Choice Carries Over — Signed out, the login page stays in Shona — “Pinda” means “log in”
+00:01:11,381 --> 00:01:19,057
+Arabic, Right to Left — Choosing Arabic mirrors the whole page: the menu starts on the right and tables read right to left
 
 15
-00:01:13,446 --> 00:01:19,067
-Tenant Portal in Shona — Chipo Mutasa: “Mauya” (welcome), her unit as “Avondale Heights · Yuniti 101”, and her balance
+00:01:19,207 --> 00:01:23,175
+The Choice Carries Over — Signed out, the login page stays in Arabic — the RentalPro name and the language menu swap corners
 
 16
-00:01:19,217 --> 00:01:24,184
-Bhadhara Rendi — Pay Rent — Tenants can pay online; offline, the app uses a simulated checkout so everything runs without paid accounts
+00:01:23,325 --> 00:01:26,636
+Tenant Portal in Shona — Switching the login page to ChiShona, then signing in as tenant Chipo Mutasa
 
 17
-00:01:24,334 --> 00:01:27,835
-Back to English — One click switches back — the choice is remembered for the session
+00:01:26,786 --> 00:01:32,448
+Tenant Portal in Shona — Chipo Mutasa: “Mauya” (welcome), her unit as “Avondale Heights · Yuniti 101”, and her balance
 
 18
-00:01:27,985 --> 00:01:32,547
-Already Signed In? — Opening the login page while signed in now goes straight to your own portal, not a blank page
+00:01:32,598 --> 00:01:37,615
+Bhadhara Rendi — Pay Rent — Tenants can pay online; offline, the app uses a simulated checkout so everything runs without paid accounts
 
+19
+00:01:37,765 --> 00:01:42,862
+Back to English — One choice from the menu switches back — it is remembered for the session
+
+20
+00:01:43,012 --> 00:01:47,585
+Already Signed In? — Opening the login page while signed in now goes straight to your own portal, not a blank page
