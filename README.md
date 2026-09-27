@@ -51,7 +51,7 @@ backend/
   security.py              auth, RBAC, IDOR guard, input validation, audit log
   scheduler_jobs.py         the 4 background jobs (UC-11, UC-14, UC-15, UC-23)
   seed.py                    Harare demo data (matches credentials below)
-  i18n.py                     English/Shona interface translation
+  i18n.py                     English/Shona/Arabic interface translation
   routes/                     auth, dashboard, properties, tenants, rent, portal, maintenance, reports, api
   services/                    notifications.py, payments.py, pdf.py, reports.py
 frontend/
@@ -64,7 +64,7 @@ tests/
   test_routes.py                    end-to-end feature flows for all 25 use cases
   test_scheduler.py                 the 4 background jobs, invoked directly
   test_validation.py                validate(), validate_upload(), Stripe HMAC, idempotency
-  test_i18n.py                      English/Shona switch, place names never translated
+  test_i18n.py                      English/Shona/Arabic, right-to-left, language menu, place names never translated
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
 ```
@@ -164,19 +164,26 @@ dashboards all have realistic figures. Every property has map coordinates.
 The seed only runs on an empty database: delete `rentalpro.db` (or the
 Postgres volume) to reload it.
 
-## Language: English / Shona
+## Languages: English, Shona and Arabic
 
-An **EN | SN** switch sits in the top bar and on the login page. The choice
-is kept in the session and survives logging in and out. `backend/i18n.py`
-holds the Shona phrases; templates wrap interface text in `_("...")`, and
-any phrase without a Shona entry falls back to English.
+A language button sits in the top bar and on the login page. It shows the
+current language; click its arrow to open a list of English, ChiShona and
+العربية (Arabic). The choice is kept in the session and survives logging in
+and out. `backend/i18n.py` holds the Shona and Arabic phrase tables;
+templates wrap interface text in `_("...")`, and any phrase without an entry
+falls back to English.
+
+Arabic pages are laid out right to left: the page is marked `dir="rtl"`, so
+the navigation starts from the right and tables read from right to left.
+The stylesheet aligns text to the start of the line rather than to a fixed
+side, so one stylesheet serves both directions.
 
 Translated: navigation for every role, login and password reset, the
 portfolio dashboard, the properties, tenants, rent tracker and maintenance
 lists, the tenant dashboard and Pay Rent page, and status badges. Other
 pages and flash messages are still English only. Data is never translated:
 property names, addresses, suburbs, cities and people's names read the same
-in both languages, which `tests/test_i18n.py` checks.
+in every language, which `tests/test_i18n.py` checks.
 
 ## Run the Test Suite
 
@@ -192,7 +199,7 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 226 tests (226 passed, 0 skipped on the latest run),
+**Current results:** 231 tests (231 passed, 0 skipped on the latest run),
 0 failures, 82% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
