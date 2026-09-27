@@ -4,10 +4,10 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from backend.extensions import db
 from backend.models import (
+    MANAGEMENT_ROLES,
     EXPENSE_CATEGORIES,
     LATE_FEE_TYPES,
     ROLE_ADMIN,
-    ROLE_MANAGER,
     ROLE_OWNER,
     PROPERTY_TYPES,
     UNIT_TYPES,
@@ -16,14 +16,11 @@ from backend.models import (
     PropertyExpense,
     Unit,
 )
-from backend.security import assert_owner, audit_log, current_user, role_required, validate, validate_upload
+from backend.security import assert_owner, audit_log, current_user, role_required, validate, validate_photos
 from backend.services.storage import save_uploads, serve_upload
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 MAX_PROPERTY_PHOTOS = 10
 MAX_UNIT_PHOTOS = 5
-IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 bp = Blueprint("properties", __name__, url_prefix="/properties")
 
@@ -33,21 +30,6 @@ def _visible_query(user):
     if user.role == ROLE_OWNER:
         q = q.filter_by(owner_id=user.id)
     return q
-
-
-def _valid_photos(files, max_count):
-    """Returns (valid_files, errors) — any file beyond max_count or that
-    fails image validation is reported rather than silently dropped."""
-    files = [f for f in files if f and f.filename]
-    errors = []
-    if len(files) > max_count:
-        errors.append(f"You may upload at most {max_count} photos at a time.")
-        files = files[:max_count]
-    for f in files:
-        if not validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
-            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not uploaded.')
-    valid = [f for f in files if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES)]
-    return valid, errors
 
 
 @bp.route("")
@@ -101,7 +83,7 @@ def add():
             errors.append("Set both latitude and longitude, or leave the map location blank.")
         elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
             errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
-        photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
+        photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         if errors:
             for e in errors:
@@ -137,7 +119,7 @@ def add():
 @role_required(*MANAGEMENT_ROLES)
 def detail(property_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     units = prop.units.order_by(Unit.unit_number).all()
     expenses = prop.expenses.order_by(PropertyExpense.incurred_at.desc()).all()
     return render_template(
@@ -149,7 +131,7 @@ def detail(property_id):
 @role_required(*MANAGEMENT_ROLES)
 def add_expense(property_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     category = request.form.get("category", "OTHER")
     description = request.form.get("description", "").strip()
     amount = request.form.get("amount")
@@ -192,7 +174,7 @@ def add_expense(property_id):
 @role_required(*MANAGEMENT_ROLES)
 def edit(property_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     if request.method == "POST":
         description = request.form.get("description", "").strip()
         late_fee_type = request.form.get("late_fee_type", "NONE")
@@ -217,7 +199,7 @@ def edit(property_id):
             errors.append("Set both latitude and longitude, or leave the map location blank.")
         elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
             errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
-        new_photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
+        new_photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         existing = len(prop.photo_paths or [])
         if existing + len(new_photos) > MAX_PROPERTY_PHOTOS:
@@ -247,7 +229,7 @@ def edit(property_id):
 @role_required(*MANAGEMENT_ROLES)
 def add_unit(property_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     if request.method == "POST":
         unit_number = request.form.get("unit_number", "").strip()
         floor = request.form.get("floor", "").strip()
@@ -263,7 +245,7 @@ def add_unit(property_id):
             errors.append("Unit number already in use in this property.")
         if not validate("positive_float", monthly_rent):
             errors.append("Monthly rent must be a positive number.")
-        photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
+        photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
         errors.extend(photo_errors)
         if errors:
             for e in errors:
@@ -294,7 +276,7 @@ def add_unit(property_id):
 @role_required(*MANAGEMENT_ROLES)
 def edit_unit(property_id, unit_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     unit = Unit.query.filter_by(id=unit_id, property_id=property_id).first_or_404()
     if request.method == "POST":
         floor = request.form.get("floor", "").strip()
@@ -313,7 +295,7 @@ def edit_unit(property_id, unit_id):
         if new_status == "VACANT" and unit.active_lease:
             errors.append("This unit has an active lease and cannot be manually set to Vacant.")
             new_status = unit.status
-        new_photos, photo_errors = _valid_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
+        new_photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
         errors.extend(photo_errors)
         existing = len(unit.photo_paths or [])
         if existing + len(new_photos) > MAX_UNIT_PHOTOS:
@@ -346,7 +328,7 @@ def unit_history(property_id, unit_id):
     """FR-015: every tenant who has occupied the unit, newest lease first.
     Leases are never deleted, so terminated and expired ones stay listed."""
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     unit = Unit.query.filter_by(id=unit_id, property_id=property_id).first_or_404()
     leases = unit.leases.order_by(Lease.start_date.desc(), Lease.created_at.desc()).all()
     return render_template("properties/unit_history.html", property=prop, unit=unit, leases=leases)
@@ -356,7 +338,7 @@ def unit_history(property_id, unit_id):
 @role_required(*MANAGEMENT_ROLES)
 def archive(property_id):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     active_leases = Lease.query.join(Unit).filter(Unit.property_id == prop.id, Lease.status == "ACTIVE").count()
     if active_leases:
         flash("This property has active leases. Terminate them before archiving.", "error")
@@ -390,7 +372,7 @@ def archive_unit(property_id, unit_id):
 @role_required(*MANAGEMENT_ROLES)
 def property_photo(property_id, relpath):
     assert_owner(property_id)
-    prop = Property.query.get_or_404(property_id)
+    prop = db.get_or_404(Property, property_id)
     full = f"properties/{property_id}/{relpath}"
     if full not in (prop.photo_paths or []):
         abort(404)

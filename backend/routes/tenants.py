@@ -4,12 +4,11 @@ from datetime import date
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_TENANT, Lease, PasswordReset, Property, Tenant, Unit, User
-from backend.security import assert_owner, assert_tenant_self, audit_log, current_user, role_required, validate, validate_upload
+from backend.models import MANAGEMENT_ROLES, ROLE_TENANT, Lease, PasswordReset, Tenant, Unit, User
+from backend.security import assert_tenant_self, audit_log, role_required, validate, validate_upload
 from backend.services.notifications import send_email, send_email_raw
 from backend.services.storage import save_upload, serve_upload
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 IMAGE_OR_PDF = (".jpg", ".jpeg", ".png", ".pdf")
 MAX_ID_DOC_BYTES = 10 * 1024 * 1024
 
@@ -87,7 +86,7 @@ def invite():
     from backend.models import TenantInvitation
 
     unit_id = request.args.get("unit_id") or request.form.get("unit_id")
-    unit = Unit.query.get_or_404(unit_id) if unit_id else None
+    unit = db.get_or_404(Unit, unit_id) if unit_id else None
     if unit and unit.status != "VACANT":
         flash("Only vacant units can be invited to.", "error")
         return redirect(url_for("properties.detail", property_id=unit.property_id))
@@ -120,7 +119,7 @@ def invite():
 @bp.route("/<tenant_id>")
 @role_required(*MANAGEMENT_ROLES)
 def detail(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     leases = tenant.leases.order_by(Lease.start_date.desc()).all()
     vacant_units = Unit.query.filter_by(status="VACANT").all()
     return render_template("tenants/detail.html", tenant=tenant, leases=leases, vacant_units=vacant_units)
@@ -129,7 +128,7 @@ def detail(tenant_id):
 @bp.route("/<tenant_id>/upload-lease", methods=["GET", "POST"])
 @role_required(*MANAGEMENT_ROLES)
 def upload_lease(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     preselect_unit_id = request.args.get("unit_id")
     vacant_units = Unit.query.filter_by(status="VACANT").all()
 
@@ -200,7 +199,7 @@ def upload_lease(tenant_id):
 @bp.route("/<tenant_id>/blacklist", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def blacklist(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     reason = request.form.get("reason", "").strip()
     if not reason:
         flash("A reason is required to blacklist a tenant.", "error")
@@ -216,7 +215,7 @@ def blacklist(tenant_id):
 @bp.route("/<tenant_id>/unblacklist", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def unblacklist(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     tenant.is_blacklisted = False
     tenant.blacklist_reason = None
     db.session.commit()
@@ -228,7 +227,7 @@ def unblacklist(tenant_id):
 @bp.route("/<tenant_id>/id-document")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def id_document(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     assert_tenant_self(tenant.id)
     if not tenant.id_document_path:
         abort(404)
@@ -238,7 +237,7 @@ def id_document(tenant_id):
 @bp.route("/<tenant_id>/lease-document/<lease_id>")
 @role_required(*MANAGEMENT_ROLES, ROLE_TENANT)
 def lease_document(tenant_id, lease_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
+    tenant = db.get_or_404(Tenant, tenant_id)
     assert_tenant_self(tenant.id)
     lease = Lease.query.filter_by(id=lease_id, tenant_id=tenant.id).first_or_404()
     if not lease.document_path:

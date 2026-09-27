@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db, limiter
 from backend.models import ROLE_TENANT, PasswordReset, Tenant, TenantInvitation, User

@@ -13,7 +13,7 @@ def test_tenant_can_view_own_statement(client, active_lease):
 
 
 def test_tenant_cannot_view_another_tenants_statement(client, db, active_lease, property_, tenant):
-    from backend.models import Tenant, Unit, User
+    from backend.models import Tenant, User
 
     other_user = User(email="other-tenant@test.com", first_name="Other", last_name="Tenant", role="TENANT")
     other_user.set_password("password123")

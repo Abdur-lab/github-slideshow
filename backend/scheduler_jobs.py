@@ -7,7 +7,7 @@ Deliverable 3 describes the test suite invoking these jobs."""
 from datetime import date, datetime, timedelta
 
 from backend.extensions import db
-from backend.models import Lease, MaintenanceRequest, RentInvoice, ROLE_MANAGER, ROLE_OWNER, User
+from backend.models import Lease, MaintenanceRequest, RentInvoice, ROLE_MANAGER, User
 from backend.security import audit_log
 from backend.services.notifications import send_email, send_sms
 
@@ -118,7 +118,7 @@ def job_overdue_alerts() -> int:
 
     for owner_id, leases in owner_summaries.items():
         owner = db.session.get(User, owner_id)
-        total = sum(l.balance for l in leases)
+        total = sum(lease.balance for lease in leases)
         body = f"{len(leases)} tenant(s) overdue, totalling {total:.2f} outstanding."
         send_email(owner, "Daily overdue rent summary", body)
         sent += 1

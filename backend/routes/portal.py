@@ -1,5 +1,6 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from backend.extensions import db
 from backend.models import ROLE_TENANT, Lease, MaintenanceRequest, RentPayment
 from backend.security import audit_log, current_user, role_required
 from backend.services.notifications import send_email
@@ -50,7 +51,7 @@ def pay_confirm(lease_id):
     callback so the online-payment flow (UC-13) is testable end-to-end
     without a live Stripe account."""
     tenant = _my_tenant()
-    lease = Lease.query.get_or_404(lease_id)
+    lease = db.get_or_404(Lease, lease_id)
     if lease.tenant_id != tenant.id:
         abort(403)
     ref = request.args.get("ref")

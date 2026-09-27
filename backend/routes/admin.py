@@ -7,11 +7,10 @@ import secrets
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from backend.extensions import db
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_STAFF, ROLES, PasswordReset, User
+from backend.models import MANAGEMENT_ROLES, ROLE_ADMIN, ROLE_OWNER, ROLE_STAFF, ROLES, PasswordReset, User
 from backend.security import audit_log, current_user, role_required, validate
 from backend.services.notifications import send_email
 
-MANAGEMENT_ROLES = (ROLE_ADMIN, ROLE_OWNER, ROLE_MANAGER)
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -26,7 +25,7 @@ def users():
 @bp.route("/users/<user_id>/edit", methods=["POST"])
 @role_required(ROLE_ADMIN)
 def edit_user(user_id):
-    target = User.query.get_or_404(user_id)
+    target = db.get_or_404(User, user_id)
     new_role = request.form.get("role", target.role)
     new_active = request.form.get("is_active") == "on"
 

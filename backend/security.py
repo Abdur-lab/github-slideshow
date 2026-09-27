@@ -201,6 +201,30 @@ def validate_upload(file_storage, allowed_ext=(".pdf",), max_bytes: int = 20 * 1
     return True
 
 
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+def validate_photos(files, max_count: int, *, action: str = "uploaded", report_excess: bool = True):
+    """Splits a multi-file photo field into (valid_files, errors). Empty
+    inputs are ignored; files beyond max_count are dropped (with an error
+    when report_excess is set); each remaining file must be a genuine
+    JPG/PNG under 5 MB, and any that is not is named in the errors."""
+    files = [f for f in files if f and f.filename]
+    errors = []
+    if len(files) > max_count:
+        if report_excess:
+            errors.append(f"You may upload at most {max_count} photos at a time.")
+        files = files[:max_count]
+    valid = []
+    for f in files:
+        if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
+            valid.append(f)
+        else:
+            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not {action}.')
+    return valid, errors
+
+
 # --- Audit log ----------------------------------------------------------------
 
 def audit_log(action: str, entity_type: str, entity_id: str = None, old_value=None, new_value=None, user_id=None):

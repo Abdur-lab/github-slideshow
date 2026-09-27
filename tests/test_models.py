@@ -1,7 +1,6 @@
 import re
 from datetime import date, timedelta
 
-import pytest
 
 from backend.models import (
     Lease,

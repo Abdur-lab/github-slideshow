@@ -1,9 +1,8 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 import pytest
 
-from backend.extensions import db
-from backend.models import AuditLog, Lease, MaintenanceRequest, Notification, RentPayment, Unit
+from backend.models import Lease, MaintenanceRequest, Notification, RentPayment, Unit
 from backend.scheduler_jobs import (
     job_escalate_overdue_maintenance,
     job_lease_expiry_alerts,

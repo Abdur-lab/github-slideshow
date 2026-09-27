@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, jsonify, render_template
 
-from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Lease, MaintenanceRequest, Property, Unit
+from backend.models import ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, Lease, MaintenanceRequest, Property
 from backend.security import current_user, role_required
 from backend.services.reports import portfolio_performance
 
