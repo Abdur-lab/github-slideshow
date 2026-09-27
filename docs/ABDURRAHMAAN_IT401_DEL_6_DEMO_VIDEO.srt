@@ -1,79 +1,91 @@
 1
-00:00:00,553 --> 00:00:04,925
+00:00:00,588 --> 00:00:05,069
 RentalPro — Harare Portfolio Walkthrough — Signing in as Administrator Abdur-Rahmaan Ali (admin@rentalpro.com)
 
 2
-00:00:05,075 --> 00:00:10,327
+00:00:05,219 --> 00:00:10,510
 Portfolio Dashboard — Five Harare properties, 16 units, 56% occupied — rent collected and outstanding at a glance
 
 3
-00:00:10,477 --> 00:00:14,964
+00:00:10,660 --> 00:00:15,143
 Properties — Avondale, the CBD, Eastlea and Vainona — each section of the app has its own Harare photograph
 
 4
-00:00:15,114 --> 00:00:20,643
+00:00:15,293 --> 00:00:20,832
 Portfolio Map — Every located property is pinned; each pin links back to its property record
 
 5
-00:00:20,793 --> 00:00:27,898
+00:00:20,982 --> 00:00:28,103
 Avondale Heights — Units, occupancy and the property’s own location pin
 
 6
-00:00:28,048 --> 00:00:32,586
+00:00:28,253 --> 00:00:32,836
 Tenants — Nine Harare tenants — national IDs, units and balances in one list
 
 7
-00:00:32,736 --> 00:00:37,325
+00:00:32,986 --> 00:00:37,642
 Rent Tracker — Paid-up and overdue leases — Nyasha Mapfumo is one month ($600) behind
 
 8
-00:00:37,475 --> 00:00:43,780
+00:00:37,792 --> 00:00:44,228
 Recording a Payment — The manager records Nyasha’s $600 cash payment
 
 9
-00:00:43,930 --> 00:00:48,424
+00:00:44,378 --> 00:00:48,928
 Balance Cleared — Nyasha Mapfumo is now paid up — every payment gets a receipt number and an audit-log entry
 
 10
-00:00:48,574 --> 00:00:52,539
+00:00:49,078 --> 00:00:53,056
 Maintenance — The leaking-faucet ticket, assigned to maintenance staff member Farai Ncube
 
 11
-00:00:52,689 --> 00:00:59,518
+00:00:53,206 --> 00:01:00,077
 Reports — Collected, outstanding, expenses and net income for each property — exportable to Excel or PDF
 
 12
-00:00:59,668 --> 00:01:04,464
+00:01:00,227 --> 00:01:04,968
 Three Languages — The language button in the top bar opens a list: English, ChiShona and Arabic
 
 13
-00:01:04,614 --> 00:01:11,231
+00:01:05,118 --> 00:01:11,796
 Dhashibhodhi yeZvivakwa — Choosing ChiShona: menus, headings, tiles and badges in Shona — property and people’s names stay as entered
 
 14
-00:01:11,381 --> 00:01:19,057
+00:01:11,946 --> 00:01:19,612
 Arabic, Right to Left — Choosing Arabic mirrors the whole page: the menu starts on the right and tables read right to left
 
 15
-00:01:19,207 --> 00:01:23,175
+00:01:19,762 --> 00:01:23,763
 The Choice Carries Over — Signed out, the login page stays in Arabic — the RentalPro name and the language menu swap corners
 
 16
-00:01:23,325 --> 00:01:26,636
+00:01:23,913 --> 00:01:27,288
 Tenant Portal in Shona — Switching the login page to ChiShona, then signing in as tenant Chipo Mutasa
 
 17
-00:01:26,786 --> 00:01:32,448
+00:01:27,438 --> 00:01:33,106
 Tenant Portal in Shona — Chipo Mutasa: “Mauya” (welcome), her unit as “Avondale Heights · Yuniti 101”, and her balance
 
 18
-00:01:32,598 --> 00:01:37,615
+00:01:33,256 --> 00:01:38,252
 Bhadhara Rendi — Pay Rent — Tenants can pay online; offline, the app uses a simulated checkout so everything runs without paid accounts
 
 19
-00:01:37,765 --> 00:01:42,862
+00:01:38,402 --> 00:01:43,489
 Back to English — One choice from the menu switches back — it is remembered for the session
 
 20
-00:01:43,012 --> 00:01:47,585
+00:01:43,639 --> 00:01:49,651
 Already Signed In? — Opening the login page while signed in now goes straight to your own portal, not a blank page
+
+21
+00:01:49,801 --> 00:01:57,180
+Tenant History per Unit — Signed in as the owner, Tendai Moyo — every unit now has a History button
+
+22
+00:01:57,330 --> 00:02:02,779
+Tenant History — Unit 101 — Current and former tenants, newest first (the former tenant was added to the demo data for this example)
+
+23
+00:02:02,929 --> 00:02:11,140
+Maintenance Summary — Reports count open, in-progress and closed requests per property for a chosen period — this month by default
