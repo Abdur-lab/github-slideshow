@@ -105,27 +105,61 @@ a:hover { text-decoration: underline; }
 }
 .topnav-user .text-muted { color: rgba(255, 255, 255, 0.75); }
 
-.lang-switch {
+.lang-menu { position: relative; }
+.lang-menu summary {
   display: inline-flex;
-  gap: 2px;
-  padding: 2px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
-}
-.lang-switch a {
-  padding: 2px 7px;
-  border-radius: 999px;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  white-space: nowrap;
 }
-.lang-switch a:hover { background: rgba(255, 255, 255, 0.2); text-decoration: none; }
-.lang-switch a.active { background: #fff; color: #7a1240; }
+.lang-menu summary::-webkit-details-marker { display: none; }
+.lang-menu summary:hover { background: rgba(255, 255, 255, 0.26); }
+.lang-menu summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.lang-caret { transition: transform 0.15s ease; }
+.lang-menu[open] .lang-caret { transform: rotate(180deg); }
+.lang-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 50;
+  min-width: 150px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+.lang-options a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.88rem;
+  text-shadow: none;
+}
+.lang-options a:hover { background: #f3f4f6; text-decoration: none; }
+.lang-options a.active { background: #fbe7ef; color: #7a1240; font-weight: 600; }
+.lang-code { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); }
+.lang-options a.active .lang-code { color: #9d174d; }
 .auth-lang { position: absolute; top: 2.5rem; right: 2.5rem; z-index: 1; }
 [dir="rtl"] .auth-brand { left: auto; right: 2.5rem; }
 [dir="rtl"] .auth-lang { right: auto; left: 2.5rem; }
-.auth-lang .lang-switch { background: rgba(0, 0, 0, 0.3); }
+.auth-lang .lang-menu summary { background: rgba(0, 0, 0, 0.3); }
+.auth-lang .lang-menu summary:hover { background: rgba(0, 0, 0, 0.45); }
 
 .content { padding: 1.5rem; max-width: 1200px; }
 

@@ -9,11 +9,17 @@
 </head>
 <body>
 {% macro language_switch() %}
-<div class="lang-switch" role="group" aria-label="{{ _('Language') }}">
-  {% for code, label in languages.items() %}
-  <a href="{{ url_for('set_language', code=code, next=request.path) }}" lang="{{ code }}" title="{{ label }}"{% if code == current_lang %} class="active" aria-current="true"{% endif %}>{{ code|upper }}</a>
-  {% endfor %}
-</div>
+<details class="lang-menu">
+  <summary aria-label="{{ _('Language') }}: {{ languages[current_lang] }}">
+    <span lang="{{ current_lang }}">{{ languages[current_lang] }}</span>
+    <svg class="lang-caret" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <ul class="lang-options" role="list">
+    {% for code, label in languages.items() %}
+    <li><a href="{{ url_for('set_language', code=code, next=request.path) }}" lang="{{ code }}"{% if code == current_lang %} class="active" aria-current="true"{% endif %}><span>{{ label }}</span><span class="lang-code">{{ code|upper }}</span></a></li>
+    {% endfor %}
+  </ul>
+</details>
 {% endmacro %}
 {% if current_user %}
 <div class="app-shell wm-{{ request.blueprint }}">
@@ -69,6 +75,15 @@
   </div>
 </div>
 {% endif %}
+<script>
+  // Close the language menu when clicking elsewhere or pressing Escape.
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll("details.lang-menu[open]").forEach((m) => { if (!m.contains(e.target)) m.removeAttribute("open"); });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") document.querySelectorAll("details.lang-menu[open]").forEach((m) => m.removeAttribute("open"));
+  });
+</script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
