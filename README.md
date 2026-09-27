@@ -232,6 +232,15 @@ All of the above ship with photo/document upload validation (magic-byte
 checks reused from the existing PDF validator, extended to JPEG/PNG) and
 are covered by `tests/test_deliverable5.py` (31 tests).
 
+The Deliverable 5 report (`docs/ABDURRAHMAAN_IT401_DEL_5.docx`) later traced all
+44 functional requirements one by one and found two only partly met: a full
+tenant history per unit (FR-015) and a maintenance summary per period (FR-036).
+Both were added afterwards — a History page on every unit and a Maintenance
+Summary on the Reports page — and are covered by
+`tests/test_unit_history_and_maintenance_summary.py` (13 tests). All 44 are now
+met; FR-021 (overdue notices) and FR-044 (welcome emails) deliberately differ
+from the SRS wording, as the report explains.
+
 ## Property Map
 
 Every property can carry an optional `latitude`/`longitude`. Set it by
