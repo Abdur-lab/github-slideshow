@@ -1,6 +1,6 @@
 """Reporting aggregation: occupancy, rent collection, overdue analysis, and
 maintenance cost summaries (UC-24 / UC-25)."""
-from datetime import date
+from datetime import date, datetime, time, timedelta
 
 from backend.models import Lease, MaintenanceCost, MaintenanceRequest, Property, PropertyExpense, RentPayment, Unit
 from backend.extensions import db
@@ -84,3 +84,38 @@ def portfolio_performance(properties) -> dict:
         "total_expenses": total_expenses,
         "net_income_estimate": round(rent_collected - total_expenses, 2),
     }
+
+
+# FR-036 groups the six request stages into the three the SRS reports on.
+MAINTENANCE_STAGE_GROUPS = {
+    "open": ("SUBMITTED", "ACKNOWLEDGED", "ASSIGNED"),
+    "in_progress": ("IN_PROGRESS",),
+    "closed": ("COMPLETED", "CLOSED"),
+}
+
+
+def maintenance_summary(properties, start: date, end: date) -> dict:
+    """FR-036: open, in-progress and closed maintenance requests per property
+    for requests raised between start and end (both inclusive), by their
+    current stage."""
+    window_start = datetime.combine(start, time.min)
+    window_end = datetime.combine(end + timedelta(days=1), time.min)
+    rows = []
+    for prop in properties:
+        unit_ids = [u.id for u in prop.units]
+        requests = (
+            MaintenanceRequest.query.filter(
+                MaintenanceRequest.unit_id.in_(unit_ids),
+                MaintenanceRequest.created_at >= window_start,
+                MaintenanceRequest.created_at < window_end,
+            ).all()
+            if unit_ids
+            else []
+        )
+        row = {"property_id": prop.id, "property_name": prop.name}
+        for group, stages in MAINTENANCE_STAGE_GROUPS.items():
+            row[group] = sum(1 for r in requests if r.status in stages)
+        row["total"] = len(requests)
+        rows.append(row)
+    totals = {key: sum(r[key] for r in rows) for key in (*MAINTENANCE_STAGE_GROUPS, "total")}
+    return {"start": start, "end": end, "properties": rows, "totals": totals}

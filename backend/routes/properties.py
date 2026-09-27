@@ -340,6 +340,18 @@ def edit_unit(property_id, unit_id):
     return render_template("properties/edit_unit.html", property=prop, unit=unit, types=UNIT_TYPES)
 
 
+@bp.route("/<property_id>/units/<unit_id>/history")
+@role_required(*MANAGEMENT_ROLES)
+def unit_history(property_id, unit_id):
+    """FR-015: every tenant who has occupied the unit, newest lease first.
+    Leases are never deleted, so terminated and expired ones stay listed."""
+    assert_owner(property_id)
+    prop = Property.query.get_or_404(property_id)
+    unit = Unit.query.filter_by(id=unit_id, property_id=property_id).first_or_404()
+    leases = unit.leases.order_by(Lease.start_date.desc(), Lease.created_at.desc()).all()
+    return render_template("properties/unit_history.html", property=prop, unit=unit, leases=leases)
+
+
 @bp.route("/<property_id>/archive", methods=["POST"])
 @role_required(*MANAGEMENT_ROLES)
 def archive(property_id):
