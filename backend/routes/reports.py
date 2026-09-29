@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import Blueprint, Response, flash, render_template, request
 
+from backend.i18n import translate as _
 from backend.extensions import db
 from backend.models import MANAGEMENT_ROLES, ROLE_OWNER, Property
 from backend.security import assert_owner, audit_log, current_user, role_required
@@ -32,10 +33,10 @@ def _maintenance_period(args):
         start = date.fromisoformat(raw_start) if raw_start else default[0]
         end = date.fromisoformat(raw_end) if raw_end else today
     except ValueError:
-        flash("Dates must be in YYYY-MM-DD format; showing the current month instead.", "error")
+        flash(_("Dates must be in YYYY-MM-DD format; showing the current month instead."), "error")
         return default
     if start > end:
-        flash("The start date must be on or before the end date; showing the current month instead.", "error")
+        flash(_("The start date must be on or before the end date; showing the current month instead."), "error")
         return default
     return start, end
 

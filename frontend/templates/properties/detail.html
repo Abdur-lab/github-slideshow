@@ -9,27 +9,27 @@
     <p class="text-muted">{{ property.property_code }} &middot; {{ property.address }}, {{ property.city }}, {{ property.country }}</p>
   </div>
   <div>
-    <a href="{{ url_for('properties.edit', property_id=property.id) }}" class="btn btn-secondary">Edit</a>
-    <a href="{{ url_for('properties.add_unit', property_id=property.id) }}" class="btn">+ Add Unit</a>
+    <a href="{{ url_for('properties.edit', property_id=property.id) }}" class="btn btn-secondary">{{ _('Edit') }}</a>
+    <a href="{{ url_for('properties.add_unit', property_id=property.id) }}" class="btn">{{ _('+ Add Unit') }}</a>
     {% if property.status == 'ACTIVE' %}
-    <form method="post" action="{{ url_for('properties.archive', property_id=property.id) }}" style="display:inline" onsubmit="return confirm('Archive this property?');">
+    <form method="post" action="{{ url_for('properties.archive', property_id=property.id) }}" style="display:inline" onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ _('Archive this property?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-secondary" type="submit">Archive</button>
+      <button class="btn btn-secondary" type="submit">{{ _('Archive') }}</button>
     </form>
     {% endif %}
   </div>
 </div>
 
 <div class="grid grid-4 mt-1">
-  <div class="stat-tile"><div class="label">Total Units</div><div class="value">{{ units|length }}</div></div>
-  <div class="stat-tile"><div class="label">Occupied</div><div class="value">{{ units|selectattr('status', 'equalto', 'OCCUPIED')|list|length }}</div></div>
-  <div class="stat-tile"><div class="label">Vacant</div><div class="value">{{ units|selectattr('status', 'equalto', 'VACANT')|list|length }}</div></div>
-  <div class="stat-tile"><div class="label">Occupancy Rate</div><div class="value">{{ property.occupancy_rate }}%</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Total Units') }}</div><div class="value">{{ units|length }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Occupied') }}</div><div class="value">{{ units|selectattr('status', 'equalto', 'OCCUPIED')|list|length }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Vacant') }}</div><div class="value">{{ units|selectattr('status', 'equalto', 'VACANT')|list|length }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Occupancy Rate') }}</div><div class="value">{{ property.occupancy_rate }}%</div></div>
 </div>
 
 {% if property.has_location %}
 <div class="card">
-  <h3>Location</h3>
+  <h3>{{ _('Location') }}</h3>
   <div id="property-detail-map" class="map-container map-detail" data-map-static
        data-lat="{{ property.latitude }}" data-lng="{{ property.longitude }}"></div>
 </div>
@@ -37,7 +37,7 @@
 
 {% if property.photo_paths %}
 <div class="card">
-  <h3>Photos</h3>
+  <h3>{{ _('Photos') }}</h3>
   <div class="grid grid-4">
     {% for p in property.photo_paths %}
       <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
@@ -47,25 +47,25 @@
 {% endif %}
 
 <div class="card">
-  <h3>Units</h3>
+  <h3>{{ _('Units') }}</h3>
   {% if units %}
   <table>
-    <thead><tr><th>Unit</th><th>Type</th><th>Rent</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>{{ _('Unit') }}</th><th>{{ _('Type') }}</th><th>{{ _('Rent') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
     <tbody>
     {% for unit in units %}
       <tr>
         <td>{{ unit.unit_code }} (#{{ unit.unit_number }})</td>
-        <td>{{ unit.type }}</td>
+        <td>{{ unit.type|label }}</td>
         <td>{{ property.currency }} {{ "%.2f"|format(unit.monthly_rent) }}</td>
         <td>{{ status_badge(unit.status) }}</td>
         <td>
-          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.edit_unit', property_id=property.id, unit_id=unit.id) }}">Edit</a>
-          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.unit_history', property_id=property.id, unit_id=unit.id) }}">History</a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.edit_unit', property_id=property.id, unit_id=unit.id) }}">{{ _('Edit') }}</a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.unit_history', property_id=property.id, unit_id=unit.id) }}">{{ _('History') }}</a>
           {% if unit.status == 'VACANT' %}
-            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.invite', unit_id=unit.id) }}">Invite Tenant</a>
-            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.add', unit_id=unit.id) }}">Create Tenant Profile</a>
+            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.invite', unit_id=unit.id) }}">{{ _('Invite Tenant') }}</a>
+            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.add', unit_id=unit.id) }}">{{ _('Create Tenant Profile') }}</a>
           {% elif unit.active_lease %}
-            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.detail', tenant_id=unit.active_lease.tenant_id) }}">View Tenant</a>
+            <a class="btn btn-sm btn-secondary" href="{{ url_for('tenants.detail', tenant_id=unit.active_lease.tenant_id) }}">{{ _('View Tenant') }}</a>
           {% endif %}
         </td>
       </tr>
@@ -73,21 +73,21 @@
     </tbody>
   </table>
   {% else %}
-  <p class="text-muted">No units yet.</p>
+  <p class="text-muted">{{ _('No units yet.') }}</p>
   {% endif %}
 </div>
 
 <div class="card mt-1">
-  <h3>Operating Expenses</h3>
-  <p class="text-muted">Costs the owner incurs against this property — taxes, insurance, management fees, utilities, and general upkeep — as distinct from charges billed to tenants.</p>
+  <h3>{{ _('Operating Expenses') }}</h3>
+  <p class="text-muted">{{ _('Costs the owner incurs against this property — taxes, insurance, management fees, utilities, and general upkeep — as distinct from charges billed to tenants.') }}</p>
   {% if expenses %}
   <table>
-    <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+    <thead><tr><th>{{ _('Date') }}</th><th>{{ _('Category') }}</th><th>{{ _('Description') }}</th><th>{{ _('Amount') }}</th></tr></thead>
     <tbody>
     {% for e in expenses %}
       <tr>
         <td>{{ e.incurred_at }}</td>
-        <td>{{ e.category.replace('_', ' ').title() }}</td>
+        <td>{{ e.category|label }}</td>
         <td>{{ e.description }}</td>
         <td>{{ property.currency }} {{ "%.2f"|format(e.amount) }}</td>
       </tr>
@@ -95,32 +95,32 @@
     </tbody>
   </table>
   {% else %}
-  <p class="text-muted">No expenses recorded for this property yet.</p>
+  <p class="text-muted">{{ _('No expenses recorded for this property yet.') }}</p>
   {% endif %}
 
   <form method="post" action="{{ url_for('properties.add_expense', property_id=property.id) }}" class="mt-1">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid grid-4">
       <div class="field">
-        <label for="category">Category</label>
+        <label for="category">{{ _('Category') }}</label>
         <select id="category" name="category">
-          {% for c in expense_categories %}<option value="{{ c }}">{{ c.replace('_', ' ').title() }}</option>{% endfor %}
+          {% for c in expense_categories %}<option value="{{ c }}">{{ c|label }}</option>{% endfor %}
         </select>
       </div>
       <div class="field">
-        <label for="expense_description">Description</label>
+        <label for="expense_description">{{ _('Description') }}</label>
         <input type="text" id="expense_description" name="description" required>
       </div>
       <div class="field">
-        <label for="expense_amount">Amount</label>
+        <label for="expense_amount">{{ _('Amount') }}</label>
         <input type="number" step="0.01" id="expense_amount" name="amount" required>
       </div>
       <div class="field">
-        <label for="incurred_at">Date</label>
+        <label for="incurred_at">{{ _('Date') }}</label>
         <input type="date" id="incurred_at" name="incurred_at">
       </div>
     </div>
-    <button class="btn btn-sm" type="submit">Add Expense</button>
+    <button class="btn btn-sm" type="submit">{{ _('Add Expense') }}</button>
   </form>
 </div>
 {% endblock %}

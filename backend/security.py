@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from flask import abort, g, has_request_context, redirect, request, session, url_for
 
 from backend.extensions import db
+from backend.i18n import translate
 from backend.models import AuditLog, Property, ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_STAFF, ROLE_TENANT, User
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -82,8 +83,12 @@ def role_required(*roles):
 
 
 def safe_next_url(next_url: str, default: str) -> str:
-    """Blocks open-redirect (//evil.com or scheme-qualified) 'next' params."""
-    if not next_url:
+    """Blocks open-redirect 'next' params: only same-site paths like /rent are allowed.
+
+    Rejects scheme-qualified and protocol-relative URLs (//evil.com), and any
+    backslash, since browsers treat /\\evil.com as //evil.com.
+    """
+    if not next_url or not next_url.startswith("/") or "\\" in next_url:
         return default
     parsed = urlparse(next_url)
     if parsed.netloc or parsed.scheme:
@@ -214,14 +219,18 @@ def validate_photos(files, max_count: int, *, action: str = "uploaded", report_e
     errors = []
     if len(files) > max_count:
         if report_excess:
-            errors.append(f"You may upload at most {max_count} photos at a time.")
+            errors.append(translate("You may upload at most {count} photos at a time.", count=max_count))
         files = files[:max_count]
     valid = []
     for f in files:
         if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
             valid.append(f)
         else:
-            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not {action}.')
+            if action == "attached":
+                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not attached.'
+            else:
+                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not uploaded.'
+            errors.append(translate(message, filename=f.filename))
     return valid, errors
 
 

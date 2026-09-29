@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros.html" import status_badge, severity_badge %}
-{% block title %}Maintenance — RentalPro{% endblock %}
+{% block title %}{{ _('Maintenance') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{% if current_user.role == 'MAINTENANCE_STAFF' %}{{ _('My Work Queue') }}{% else %}{{ _('Maintenance Requests') }}{% endif %}</h1>
 {% if requests %}

@@ -3,6 +3,7 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from backend.i18n import ltr, translate as _
 from backend.extensions import db
 from backend.models import MANAGEMENT_ROLES, ROLE_TENANT, Lease, PasswordReset, Tenant, Unit, User
 from backend.security import assert_tenant_self, audit_log, role_required, validate, validate_upload
@@ -36,17 +37,17 @@ def add():
 
         errors = []
         if not full_name:
-            errors.append("Full name is required.")
+            errors.append(_("Full name is required."))
         if not national_id:
-            errors.append("National ID is required.")
+            errors.append(_("National ID is required."))
         elif Tenant.query.filter_by(national_id=national_id).first():
-            errors.append("A tenant with this national ID may already exist. Please search before creating a new one.")
+            errors.append(_("A tenant with this national ID may already exist. Please search before creating a new one."))
         if email and not validate("email", email):
-            errors.append("Email address is invalid.")
+            errors.append(_("Email address is invalid."))
         if email and User.query.filter_by(email=email).first():
-            errors.append("A user with this email already exists.")
+            errors.append(_("A user with this email already exists."))
         if id_document and id_document.filename and not validate_upload(id_document, allowed_ext=IMAGE_OR_PDF, max_bytes=MAX_ID_DOC_BYTES):
-            errors.append("ID document must be a valid PDF, JPG, or PNG under 10 MB.")
+            errors.append(_("ID document must be a valid PDF, JPG, or PNG under 10 MB."))
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -54,7 +55,7 @@ def add():
 
         if not email:
             email = f"tenant-{secrets.token_hex(4)}@no-email.rentalpro.invalid"
-        first_name, _, last_name = full_name.partition(" ")
+        first_name, _sep, last_name = full_name.partition(" ")
         user = User(email=email, first_name=first_name or full_name, last_name=last_name or "-", role=ROLE_TENANT)
         user.set_password(secrets.token_urlsafe(16))
         db.session.add(user)
@@ -73,7 +74,7 @@ def add():
             link = url_for("auth.reset_password", token=reset.token, _external=True)
             send_email(user, "Welcome to RentalPro", f"An account has been created for you. Set your password: {link}")
 
-        flash("Tenant profile created.", "success")
+        flash(_("Tenant profile created."), "success")
         if unit_id:
             return redirect(url_for("tenants.upload_lease", tenant_id=tenant.id, unit_id=unit_id))
         return redirect(url_for("tenants.detail", tenant_id=tenant.id))
@@ -88,7 +89,7 @@ def invite():
     unit_id = request.args.get("unit_id") or request.form.get("unit_id")
     unit = db.get_or_404(Unit, unit_id) if unit_id else None
     if unit and unit.status != "VACANT":
-        flash("Only vacant units can be invited to.", "error")
+        flash(_("Only vacant units can be invited to."), "error")
         return redirect(url_for("properties.detail", property_id=unit.property_id))
 
     if request.method == "POST":
@@ -96,9 +97,9 @@ def invite():
         email = request.form.get("email", "").strip().lower()
         errors = []
         if not name:
-            errors.append("Tenant name is required.")
+            errors.append(_("Tenant name is required."))
         if not validate("email", email):
-            errors.append("A valid email address is required.")
+            errors.append(_("A valid email address is required."))
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -111,7 +112,7 @@ def invite():
         link = url_for("auth.accept_invitation", token=invitation.token, _external=True)
         send_email_raw(email, "You're invited to RentalPro", f"You've been invited to set up your tenant account: {link}")
         audit_log("tenant_invited", "Unit", unit.id, new_value={"email": email})
-        flash(f"Invitation sent to {email} (valid 48 hours).", "success")
+        flash(_("Invitation sent to {email} (valid 48 hours).", email=ltr(email)), "success")
         return redirect(url_for("properties.detail", property_id=unit.property_id))
     return render_template("tenants/invite.html", unit=unit, form={})
 
@@ -144,23 +145,28 @@ def upload_lease(tenant_id):
 
         errors = []
         if tenant.is_blacklisted:
-            errors.append(f"This tenant is blacklisted ({tenant.blacklist_reason or 'no reason on file'}) and cannot be given a new lease.")
+            errors.append(
+                _(
+                    "This tenant is blacklisted ({reason}) and cannot be given a new lease.",
+                    reason=tenant.blacklist_reason or _("no reason on file"),
+                )
+            )
         unit = db.session.get(Unit, unit_id) if unit_id else None
         if not unit:
-            errors.append("Please select a unit.")
+            errors.append(_("Please select a unit."))
         elif unit.active_lease and unit.active_lease.tenant_id != tenant.id:
-            errors.append("This unit already has a different active tenant.")
+            errors.append(_("This unit already has a different active tenant."))
         if not validate("date", start_date_raw):
-            errors.append("A valid lease start date is required.")
+            errors.append(_("A valid lease start date is required."))
         if not validate("date", end_date_raw):
-            errors.append("A valid lease end date is required.")
+            errors.append(_("A valid lease end date is required."))
         if validate("date", start_date_raw) and validate("date", end_date_raw):
             if date.fromisoformat(end_date_raw) <= date.fromisoformat(start_date_raw):
-                errors.append("Lease end date must be after the start date.")
+                errors.append(_("Lease end date must be after the start date."))
         if not validate("positive_float", monthly_rent):
-            errors.append("Monthly rent must be a positive number.")
+            errors.append(_("Monthly rent must be a positive number."))
         if not validate_upload(lease_file, allowed_ext=(".pdf",)):
-            errors.append("A signed lease PDF (max 20 MB) is required.")
+            errors.append(_("A signed lease PDF (max 20 MB) is required."))
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -190,7 +196,7 @@ def upload_lease(tenant_id):
             "Your lease has been activated",
             f"Your lease for unit {unit.unit_code} from {lease.start_date} to {lease.end_date} is now active.",
         )
-        flash("Lease activated and unit marked Occupied.", "success")
+        flash(_("Lease activated and unit marked Occupied."), "success")
         return redirect(url_for("tenants.detail", tenant_id=tenant.id))
 
     return render_template("tenants/upload_lease.html", tenant=tenant, vacant_units=vacant_units, preselect_unit_id=preselect_unit_id, form={})
@@ -202,13 +208,13 @@ def blacklist(tenant_id):
     tenant = db.get_or_404(Tenant, tenant_id)
     reason = request.form.get("reason", "").strip()
     if not reason:
-        flash("A reason is required to blacklist a tenant.", "error")
+        flash(_("A reason is required to blacklist a tenant."), "error")
         return redirect(url_for("tenants.detail", tenant_id=tenant.id))
     tenant.is_blacklisted = True
     tenant.blacklist_reason = reason
     db.session.commit()
     audit_log("tenant_blacklisted", "Tenant", tenant.id, new_value={"reason": reason})
-    flash("Tenant flagged as blacklisted.", "success")
+    flash(_("Tenant flagged as blacklisted."), "success")
     return redirect(url_for("tenants.detail", tenant_id=tenant.id))
 
 
@@ -220,7 +226,7 @@ def unblacklist(tenant_id):
     tenant.blacklist_reason = None
     db.session.commit()
     audit_log("tenant_unblacklisted", "Tenant", tenant.id)
-    flash("Blacklist flag removed.", "success")
+    flash(_("Blacklist flag removed."), "success")
     return redirect(url_for("tenants.detail", tenant_id=tenant.id))
 
 
