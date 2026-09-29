@@ -5,6 +5,21 @@ from datetime import date, datetime, time, timedelta
 from backend.models import Lease, MaintenanceCost, MaintenanceRequest, Property, PropertyExpense, RentPayment, Unit
 
 
+# Report metrics in display order, with their English names.
+REPORT_METRICS = {
+    "total_units": "Total Units",
+    "occupied_units": "Occupied Units",
+    "occupancy_rate": "Occupancy Rate",
+    "rent_collected": "Rent Collected",
+    "rent_outstanding": "Outstanding",
+    "maintenance_cost": "Maintenance Cost",
+    "general_expenses": "General Expenses",
+    "total_expenses": "Total Expenses",
+    "net_income_estimate": "Net Income",
+    "open_maintenance_requests": "Open Requests",
+}
+
+
 def property_performance(property_obj: Property, start: date = None, end: date = None) -> dict:
     units = property_obj.units.filter(Unit.status != "ARCHIVED").all()
     total_units = len(units)

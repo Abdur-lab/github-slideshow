@@ -62,8 +62,15 @@ def pay_confirm(lease_id):
         return redirect(url_for("portal.index"))
     payment = record_idempotent_payment(lease, amount, ref, recorded_by=current_user().id, method="ONLINE")
     audit_log("rent_paid_online", "RentPayment", payment.id, new_value={"amount": amount, "lease_id": lease.id})
-    send_email(tenant.user, "Payment received", f"We received your online payment of {payment.amount:.2f} ({payment.receipt_number}).")
-    send_email(lease.unit.property.owner, "Tenant payment received", f"{tenant.user.full_name} paid {payment.amount:.2f} online.")
+    amount = f"{payment.amount:.2f}"
+    send_email(
+        tenant.user, "Payment received", "We received your online payment of {amount} ({receipt}).",
+        amount=amount, receipt=payment.receipt_number,
+    )
+    send_email(
+        lease.unit.property.owner, "Tenant payment received", "{name} paid {amount} online.",
+        name=tenant.user.full_name, amount=amount,
+    )
     flash(_("Payment successful. Thank you!"), "success")
     return redirect(url_for("portal.index"))
 

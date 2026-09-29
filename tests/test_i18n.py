@@ -66,27 +66,48 @@ def test_arabic_covers_every_shona_phrase():
     assert set(SHONA) <= set(ARABIC)
 
 
+# Python calls whose string arguments are English messages shown to people.
+TRANSLATING_CALLS = {"_", "translate", "t", "render_message", "Phrase", "send_email", "send_sms", "send_email_raw"}
+
+
 def _interface_phrases():
-    """Every English phrase the interface can show: _() calls in templates and
-    routes, plus the stored codes shown through the label filter and badges."""
+    """Every English phrase the app can show or send: _() calls in templates;
+    translated messages, emails, SMS and PDF text in Python; plus the stored
+    codes shown through the label filter and status badges."""
     import ast
     import pathlib
     import re
 
     from backend import models
     from backend.i18n import LABEL_ENGLISH
+    from backend.services.reports import REPORT_METRICS
 
-    call = re.compile(r"""\b(?:_|translate)\(\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
+    call = re.compile(r"""\b_\(\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
     root = pathlib.Path(__file__).resolve().parent.parent
-    sources = list((root / "frontend" / "templates").rglob("*.html")) + list((root / "backend").rglob("*.py"))
     phrases = {}
-    for path in sources:
-        if path.name == "i18n.py":
-            continue
+    for path in (root / "frontend" / "templates").rglob("*.html"):
         for match in call.finditer(path.read_text(encoding="utf-8")):
             phrases.setdefault(ast.literal_eval(match.group(1)), path.name)
-    for name in ("ROLES", "PROPERTY_TYPES", "LATE_FEE_TYPES", "UNIT_TYPES", "PAYMENT_METHODS",
-                 "CHARGE_TYPES", "EXPENSE_CATEGORIES", "MAINT_CATEGORIES", "MAINT_SEVERITIES"):
+    for path in (root / "backend").rglob("*.py"):
+        if path.name == "i18n.py":
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            # A message kept in a `body` variable to send by email and SMS alike.
+            if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "body" for t in node.targets):
+                if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    phrases.setdefault(node.value.value, path.name)
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else None
+            if name in TRANSLATING_CALLS:
+                for arg in node.args:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        phrases.setdefault(arg.value, path.name)
+    for english in REPORT_METRICS.values():
+        phrases.setdefault(english, "REPORT_METRICS")
+    for name in ("ROLES", "PROPERTY_TYPES", "LATE_FEE_TYPES", "UNIT_TYPES", "PAYMENT_METHODS", "CHARGE_TYPES",
+                 "EXPENSE_CATEGORIES", "MAINT_CATEGORIES", "MAINT_SEVERITIES", "MAINT_STATUSES"):
         for code in getattr(models, name):
             phrases.setdefault(LABEL_ENGLISH.get(code, code.replace("_", " ").title()), name)
     for name in ("UNIT_STATUSES", "LEASE_STATUSES", "MAINT_STATUSES", "PROPERTY_STATUSES"):

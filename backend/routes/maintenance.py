@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from backend.i18n import translate as _
+from backend.i18n import Code, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -101,10 +101,13 @@ def add():
         audit_log("maintenance_submitted", "MaintenanceRequest", req.id, new_value={"ticket": req.ticket_number})
 
         owner = lease.unit.property.owner
-        send_email(user, "Maintenance request received", f"Ticket {req.ticket_number} has been received.")
-        send_email(owner, "New maintenance request", f"{req.ticket_number}: {title} ({req.severity})")
+        send_email(user, "Maintenance request received", "Ticket {ticket} has been received.", ticket=req.ticket_number)
+        send_email(
+            owner, "New maintenance request", "{ticket}: {title} ({severity})",
+            ticket=req.ticket_number, title=title, severity=Code(req.severity),
+        )
         if req.severity == "EMERGENCY":
-            send_sms(owner, f"EMERGENCY maintenance request {req.ticket_number}: {title}")
+            send_sms(owner, "EMERGENCY maintenance request {ticket}: {title}", ticket=req.ticket_number, title=title)
 
         flash(_("Request submitted. Ticket number {ticket}.", ticket=req.ticket_number), "success")
         return redirect(url_for("portal.index"))
@@ -161,8 +164,13 @@ def update(request_id):
             db.session.add(MaintenanceNote(request_id=req.id, author_id=user.id, note=note))
         db.session.commit()
         audit_log("maintenance_assigned", "MaintenanceRequest", req.id, new_value={"staff_id": staff.id})
-        send_email(staff, "Maintenance request assigned to you", f"Ticket {req.ticket_number}: {req.title}")
-        send_email(req.tenant.user, "Your request has been assigned", f"Ticket {req.ticket_number} has been assigned to our team.")
+        send_email(
+            staff, "Maintenance request assigned to you", "Ticket {ticket}: {title}", ticket=req.ticket_number, title=req.title
+        )
+        send_email(
+            req.tenant.user, "Your request has been assigned", "Ticket {ticket} has been assigned to our team.",
+            ticket=req.ticket_number,
+        )
         flash(_("Request assigned."), "success")
 
     elif action in ("start", "complete"):
@@ -183,7 +191,10 @@ def update(request_id):
                 req.completion_photo_paths = save_uploads(photos, f"maintenance/{req.id}/completion", MAX_REQUEST_PHOTOS)
         db.session.commit()
         audit_log("maintenance_status_update", "MaintenanceRequest", req.id, new_value={"status": req.status})
-        send_email(req.tenant.user, "Maintenance request updated", f"Ticket {req.ticket_number} is now {req.status}.")
+        send_email(
+            req.tenant.user, "Maintenance request updated", "Ticket {ticket} is now {status}.",
+            ticket=req.ticket_number, status=Code(req.status),
+        )
         flash(_("Status updated."), "success")
 
     elif action in ("close", "reopen"):
@@ -210,7 +221,9 @@ def update(request_id):
             db.session.commit()
             audit_log("maintenance_reopened", "MaintenanceRequest", req.id, new_value={"reason": reason})
             owner = req.unit.property.owner
-            send_email(owner, "Maintenance request reopened", f"Ticket {req.ticket_number} was reopened by the tenant.")
+            send_email(
+                owner, "Maintenance request reopened", "Ticket {ticket} was reopened by the tenant.", ticket=req.ticket_number
+            )
             flash(_("Request reopened."), "success")
     else:
         abort(400)

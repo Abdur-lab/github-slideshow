@@ -74,13 +74,7 @@ def export_pdf():
     else:
         properties = _visible_properties(user)
         summary = portfolio_performance(properties)
-
-        class _Portfolio:
-            name = "All Properties (Portfolio)"
-            property_code = "PORTFOLIO"
-
-        flat_summary = {k: v for k, v in summary.items() if k != "properties"}
-        pdf_bytes = render_property_report_pdf(_Portfolio(), flat_summary)
+        pdf_bytes = render_property_report_pdf(None, summary)
         filename = "report-portfolio.pdf"
     audit_log("report_exported", "Property", property_id, new_value={"format": "pdf"})
     return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})

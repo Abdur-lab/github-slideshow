@@ -42,6 +42,14 @@ def login_user(user: User) -> None:
     _clear_session_keeping_language()
     session["user_id"] = user.id
     session.permanent = True
+    # A language picked on this browser before signing in becomes the user's
+    # saved choice; otherwise the saved choice follows them to this browser.
+    if session.get("lang"):
+        if user.language != session["lang"]:
+            user.language = session["lang"]
+            db.session.commit()
+    else:
+        session["lang"] = user.language
 
 
 def logout_user() -> None:
@@ -227,10 +235,9 @@ def validate_photos(files, max_count: int, *, action: str = "uploaded", report_e
             valid.append(f)
         else:
             if action == "attached":
-                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not attached.'
+                errors.append(translate('"{filename}" is not a valid JPG/PNG under 5 MB and was not attached.', filename=f.filename))
             else:
-                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not uploaded.'
-            errors.append(translate(message, filename=f.filename))
+                errors.append(translate('"{filename}" is not a valid JPG/PNG under 5 MB and was not uploaded.', filename=f.filename))
     return valid, errors
 
 

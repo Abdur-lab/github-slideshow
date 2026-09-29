@@ -65,6 +65,8 @@ class User(db.Model):
     locked_until = db.Column(db.DateTime, nullable=True)
     opt_out_sms = db.Column(db.Boolean, nullable=False, default=False)
     opt_out_email = db.Column(db.Boolean, nullable=False, default=False)
+    # Interface language last chosen by the user; emails and SMS are sent in it.
+    language = db.Column(db.String(5), nullable=False, default="en", server_default="en")
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     tenant_profile = db.relationship(

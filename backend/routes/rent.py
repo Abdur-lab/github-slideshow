@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 from sqlalchemy import and_, or_
 
-from backend.i18n import label, ltr, translate as _
+from backend.i18n import Code, label, ltr, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -82,7 +82,8 @@ def record():
         send_email(
             lease.tenant.user,
             "Rent payment received",
-            f"We received your payment of {payment.amount:.2f} ({payment.receipt_number}). Remaining balance: {lease.balance:.2f}.",
+            "We received your payment of {amount} ({receipt}). Remaining balance: {balance}.",
+            amount=f"{payment.amount:.2f}", receipt=payment.receipt_number, balance=f"{lease.balance:.2f}",
         )
         flash(_("Payment recorded. Receipt {receipt}.", receipt=payment.receipt_number), "success")
         return redirect(url_for("rent.index"))
@@ -107,12 +108,14 @@ def history_csv(lease_id):
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Date", "Type", "Amount", "Method", "Receipt Number", "Notes"])
+    writer.writerow([_("Date"), _("Type"), _("Amount"), _("Method"), _("Receipt Number"), _("Notes")])
     for p in payments:
-        writer.writerow([p.paid_at.date().isoformat(), "Payment", f"{p.amount:.2f}", p.method, p.receipt_number, p.notes or ""])
+        writer.writerow(
+            [p.paid_at.date().isoformat(), _("Payment"), f"{p.amount:.2f}", label(p.method), p.receipt_number, p.notes or ""]
+        )
     audit_log("rent_history_exported", "Lease", lease.id, new_value={"format": "csv"})
     return Response(
-        buffer.getvalue(),
+        "\ufeff" + buffer.getvalue(),  # the BOM lets Excel read the UTF-8 (e.g. Arabic) headings
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename=rent-history-{lease.id[:8]}.csv"},
     )
@@ -282,8 +285,9 @@ def add_charge(lease_id):
     send_email(
         lease.tenant.user,
         "A new charge was added to your account",
-        f"A {charge_type.title()} charge of {charge.amount:.2f} ({description}) was added to your unit {lease.unit.unit_code}. "
-        f"Updated balance: {lease.balance:.2f}.",
+        "A {type} charge of {amount} ({description}) was added to your unit {unit}. Updated balance: {balance}.",
+        type=Code(charge_type), amount=f"{charge.amount:.2f}", description=description,
+        unit=lease.unit.unit_code, balance=f"{lease.balance:.2f}",
     )
     flash(_("{type} charge of {amount} added.", type=label(charge_type), amount=f"{charge.amount:.2f}"), "success")
     return redirect(url_for("rent.statement", lease_id=lease.id))
@@ -361,8 +365,10 @@ def add_meter_reading(lease_id):
         send_email(
             unit.active_lease.tenant.user,
             "A new electricity charge was added to your account",
-            f"An electricity charge of {amount:.2f} ({consumption} units) was added to your unit {unit.unit_code}. "
-            f"Updated balance: {unit.active_lease.balance:.2f}.",
+            "An electricity charge of {amount} ({consumption} units) was added to your unit {unit}. "
+            "Updated balance: {balance}.",
+            amount=f"{amount:.2f}", consumption=consumption, unit=unit.unit_code,
+            balance=f"{unit.active_lease.balance:.2f}",
         )
         flash(_("Reading recorded. Electricity charge of {amount} added.", amount=f"{amount:.2f}"), "success")
     else:
@@ -414,8 +420,8 @@ def revise_rent(lease_id):
     send_email(
         lease.tenant.user,
         "Your rent is changing",
-        f"Your monthly rent for unit {lease.unit.unit_code} will change to {revision.monthly_rent:.2f}, "
-        f"effective {revision.effective_date}.",
+        "Your monthly rent for unit {unit} will change to {amount}, effective {date}.",
+        unit=lease.unit.unit_code, amount=f"{revision.monthly_rent:.2f}", date=revision.effective_date,
     )
     flash(
         _(

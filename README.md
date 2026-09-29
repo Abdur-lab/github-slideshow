@@ -67,6 +67,9 @@ tests/
   test_scheduler.py                 the 4 background jobs, invoked directly
   test_validation.py                validate(), validate_upload(), Stripe HMAC, idempotency
   test_i18n.py                      English/Shona/Arabic, right-to-left, language menu, place names never translated
+  test_translated_documents.py      emails, SMS, PDFs, Excel and CSV in the reader's language
+  test_web_security.py              secret key, security headers, cookie flags, no inline code
+  test_migrations.py                migrations match the models; old databases are adopted
   test_unit_history_and_maintenance_summary.py  tenant history per unit (FR-015), maintenance summary per period (FR-036)
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
@@ -187,22 +190,35 @@ Postgres volume) to reload it.
 
 A language button sits in the top bar and on the login page. It shows the
 current language; click its arrow to open a list of English, ChiShona and
-العربية (Arabic). The choice is kept in the session and survives logging in
-and out. `backend/i18n.py` holds the Shona and Arabic phrase tables;
-templates wrap interface text in `_("...")`, and any phrase without an entry
-falls back to English.
+العربية (Arabic). The choice is kept in the session, survives logging in and
+out, and is saved to the user's account (`users.language`), so it follows
+them to other browsers. `backend/i18n.py` holds the Shona and Arabic phrase
+tables; templates wrap interface text in `_("...")`, and any phrase without
+an entry falls back to English.
 
 Arabic pages are laid out right to left: the page is marked `dir="rtl"`, so
 the navigation starts from the right and tables read from right to left.
 The stylesheet aligns text to the start of the line rather than to a fixed
-side, so one stylesheet serves both directions.
+side, so one stylesheet serves both directions. Dates and codes inside
+Arabic sentences are wrapped in invisible Unicode isolates so they keep
+their left-to-right order.
 
-Translated: navigation for every role, login and password reset, the
-portfolio dashboard, the properties, tenants, rent tracker and maintenance
-lists, the tenant dashboard and Pay Rent page, and status badges. Other
-pages and flash messages are still English only. Data is never translated:
+**Arabic covers everything the app shows or sends:**
+- every page, message and form option;
+- **emails and SMS**, which are written in the recipient's saved language,
+  including those sent by the nightly jobs;
+- **PDFs** (statements, receipts, reports), which use the bundled DejaVu Sans
+  font. Arabic text is joined into its connected letter forms
+  (`arabic-reshaper`) and put into right-to-left order (`python-bidi`), and
+  tables are mirrored;
+- **the Excel report**, whose sheets open right to left in Arabic, and the
+  **CSV export**, which carries a byte-order mark so Excel reads the Arabic
+  headings.
+
+`tests/test_i18n.py` fails if any of this text lacks Arabic. Shona covers the
+main screens and falls back to English elsewhere. Data is never translated:
 property names, addresses, suburbs, cities and people's names read the same
-in every language, which `tests/test_i18n.py` checks.
+in every language, which `tests/test_i18n.py` also checks.
 
 ## Run the Test Suite
 

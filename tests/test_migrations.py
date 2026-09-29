@@ -2,7 +2,7 @@ import pathlib
 
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
-from flask_migrate import downgrade
+from flask_migrate import downgrade, upgrade
 
 from backend import INITIAL_REVISION, MIGRATIONS_DIR, create_app, upgrade_database
 from backend.config import TestConfig
@@ -32,15 +32,21 @@ def test_migrations_build_exactly_the_schema_the_models_describe(tmp_path):
 def test_a_database_made_by_create_all_is_adopted_without_losing_data(tmp_path):
     app = _app(tmp_path)
     with app.app_context():
-        db.create_all()  # how databases were built before migrations existed
-        user = User(email="kept@test.com", first_name="Kept", last_name="User", role=ROLE_OWNER)
-        user.set_password("password123")
-        db.session.add(user)
+        # A database from before migrations existed: the original tables, built by
+        # db.create_all(), with no alembic_version record.
+        upgrade(directory=MIGRATIONS_DIR, revision=INITIAL_REVISION)
+        db.session.execute(db.text("DROP TABLE alembic_version"))
+        db.session.execute(db.text(
+            "INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_active, "
+            "failed_login_attempts, opt_out_sms, opt_out_email, created_at) VALUES "
+            "('u1', 'kept@test.com', 'x', 'Kept', 'User', :role, 1, 0, 0, 0, '2026-01-01')"
+        ), {"role": ROLE_OWNER})
         db.session.commit()
 
         assert upgrade_database().startswith("Existing database adopted")
         assert _revision() is not None
-        assert User.query.filter_by(email="kept@test.com").one()
+        kept = User.query.filter_by(email="kept@test.com").one()
+        assert kept.language == "en"  # added by a later migration, with its default
 
         assert upgrade_database() == "schema is up to date."  # running it again is harmless
 

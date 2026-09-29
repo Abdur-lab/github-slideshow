@@ -63,6 +63,10 @@ def create_app(config_class=Config):
 
         if code in LANGUAGES:
             session["lang"] = code
+            user = current_user()
+            if user is not None and user.language != code:
+                user.language = code  # emails and SMS follow the user's choice
+                db.session.commit()
         return redirect(safe_next_url(request.args.get("next"), url_for("root")))
 
     @app.errorhandler(403)
