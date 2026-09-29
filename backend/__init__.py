@@ -14,6 +14,11 @@ def create_app(config_class=Config):
     )
     app.config.from_object(config_class)
 
+    from backend.web_security import add_security_headers, check_secret_key
+
+    check_secret_key(app)
+    app.after_request(add_security_headers)
+
     db.init_app(app)
     csrf.init_app(app)
     cache.init_app(app)

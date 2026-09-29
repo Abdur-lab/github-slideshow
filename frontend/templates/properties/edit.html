@@ -3,7 +3,7 @@
 {% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
 <h1>{{ _('Edit {name}', name=property.name) }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
@@ -37,7 +37,7 @@
            data-lat-input="latitude" data-lng-input="longitude"
            data-default-lat="-17.8292" data-default-lng="31.0522" data-default-zoom="12"
            data-clear-button="clear-location"></div>
-      <p class="map-hint">{{ _('Click the map to move the pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">{{ _('Clear location') }}</button></p>
+      <p class="map-hint">{{ _('Click the map to move the pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="mt-xs btn btn-sm btn-secondary">{{ _('Clear location') }}</button></p>
     </div>
 
     {% if property.photo_paths %}
@@ -45,7 +45,7 @@
       <label>{{ _('Current photos ({count}/10)', count=property.photo_paths|length) }}</label>
       <div class="grid grid-4">
         {% for p in property.photo_paths %}
-          <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+          <img class="photo-thumb" src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}">
         {% endfor %}
       </div>
     </div>

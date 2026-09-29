@@ -4,7 +4,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (see env.example)}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       DATABASE_URL: postgresql://rentalpro:rentalpro@db:5432/rentalpro
       REDIS_URL: redis://redis:6379/0
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}

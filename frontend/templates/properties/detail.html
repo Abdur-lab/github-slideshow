@@ -12,7 +12,7 @@
     <a href="{{ url_for('properties.edit', property_id=property.id) }}" class="btn btn-secondary">{{ _('Edit') }}</a>
     <a href="{{ url_for('properties.add_unit', property_id=property.id) }}" class="btn">{{ _('+ Add Unit') }}</a>
     {% if property.status == 'ACTIVE' %}
-    <form method="post" action="{{ url_for('properties.archive', property_id=property.id) }}" style="display:inline" onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ _('Archive this property?') }}">
+    <form class="d-inline" method="post" action="{{ url_for('properties.archive', property_id=property.id) }}" data-confirm="{{ _('Archive this property?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-secondary" type="submit">{{ _('Archive') }}</button>
     </form>
@@ -40,7 +40,7 @@
   <h3>{{ _('Photos') }}</h3>
   <div class="grid grid-4">
     {% for p in property.photo_paths %}
-      <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+      <img class="photo-thumb" src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}">
     {% endfor %}
   </div>
 </div>

@@ -2,7 +2,7 @@
 {% block title %}{{ _('Upload Lease') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Upload Lease for {name}', name=tenant.user.full_name) }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
@@ -43,7 +43,7 @@
         <input type="checkbox" id="pro_rata" name="pro_rata">
         {{ _("Prorate the first month's rent based on the move-in date") }}
       </label>
-      <p class="text-muted" style="margin-top:0.25rem">
+      <p class="mt-xs text-muted">
         {{ _('If the tenant moves in after the 1st, the first rent charge is reduced to a daily rate for the days actually occupied that month, instead of a full month.') }}
       </p>
     </div>

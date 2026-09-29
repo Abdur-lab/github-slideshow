@@ -357,3 +357,23 @@ td, dd, .stat-tile .value, input, textarea { unicode-bidi: plaintext; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Layout helpers that replace inline style attributes (the Content-Security-Policy
+   only allows styles from this stylesheet). */
+.card-narrow { max-width: 500px; }
+.card-form { max-width: 600px; }
+.card-xs { max-width: 480px; }
+.btn-block { width: 100%; }
+.inline-form { display: flex; gap: 0.4rem; align-items: center; }
+.filter-form { display: flex; gap: 0.5rem; align-items: flex-end; }
+.inline-check { display: flex; align-items: center; gap: 0.25rem; font-weight: normal; white-space: nowrap; }
+select.w-auto { width: auto; }
+.self-end { align-self: end; }
+.m-0 { margin: 0; }
+.mb-half { margin-bottom: 0.5rem; }
+.mt-xs { margin-top: 0.3rem; }
+.d-inline { display: inline; }
+.ms-half { margin-inline-start: 0.5rem; }
+.grow-input { flex: 1; margin-inline-end: 0.5rem; }
+.photo-thumb { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+.stat-tile .value.value-sm { font-size: 1.1rem; }

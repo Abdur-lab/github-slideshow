@@ -2,7 +2,7 @@
 {% block title %}{{ _('Record Payment') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Record Rent Payment') }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">

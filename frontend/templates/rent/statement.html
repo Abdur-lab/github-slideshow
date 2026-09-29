@@ -25,7 +25,7 @@
         <label for="end">{{ _('Statement Period End') }}</label>
         <input type="date" id="end" name="end" value="{{ period_end or '' }}">
       </div>
-      <div class="field" style="align-self:end">
+      <div class="self-end field">
         <button class="btn btn-sm" type="submit">{{ _('View Period') }}</button>
         {% if period_start %}<a class="btn btn-sm btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">{{ _('Clear') }}</a>{% endif %}
       </div>

@@ -12,7 +12,7 @@
 <form method="get" class="card">
   <div class="field">
     <label for="property_id">{{ _('Property') }}</label>
-    <select id="property_id" name="property_id" onchange="this.form.submit()">
+    <select id="property_id" name="property_id" data-autosubmit>
       <option value="">{{ _('All Properties (Portfolio)') }}</option>
       {% for p in properties %}
         <option value="{{ p.id }}" {% if selected and selected.id == p.id %}selected{% endif %}>{{ p.name }}</option>
@@ -75,7 +75,7 @@
 <div class="card mt-1" id="maintenance-summary">
   <div class="flex-between">
     <h3>{{ _('Maintenance Summary') }}</h3>
-    <form method="get" action="{{ url_for('reports.index') }}#maintenance-summary" style="display:flex;gap:0.5rem;align-items:flex-end">
+    <form class="filter-form" method="get" action="{{ url_for('reports.index') }}#maintenance-summary">
       {% if selected %}<input type="hidden" name="property_id" value="{{ selected.id }}">{% endif %}
       <div><label for="start">{{ _('From') }}</label><input type="date" id="start" name="start" value="{{ maintenance.start }}"></div>
       <div><label for="end">{{ _('To') }}</label><input type="date" id="end" name="end" value="{{ maintenance.end }}"></div>

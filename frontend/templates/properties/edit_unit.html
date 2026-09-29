@@ -2,7 +2,7 @@
 {% block title %}{{ _('Edit Unit {code}', code=unit.unit_code) }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Edit Unit {code}', code=unit.unit_code) }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid grid-2">
@@ -46,7 +46,7 @@
       <label>{{ _('Current photos ({count}/5)', count=unit.photo_paths|length) }}</label>
       <div class="grid grid-4">
         {% for p in unit.photo_paths %}
-          <img src="{{ url_for('properties.unit_photo', property_id=property.id, unit_id=unit.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+          <img class="photo-thumb" src="{{ url_for('properties.unit_photo', property_id=property.id, unit_id=unit.id, relpath=p.split('/')[-1]) }}">
         {% endfor %}
       </div>
     </div>

@@ -6,7 +6,7 @@
 
 {% if lease %}
 <div class="grid grid-3 mt-1">
-  <div class="stat-tile"><div class="label">{{ _('Unit') }}</div><div class="value" style="font-size:1.1rem">{{ _('{property} · Unit {unit}', property=lease.unit.property.name, unit=lease.unit.unit_number) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Unit') }}</div><div class="value-sm value">{{ _('{property} · Unit {unit}', property=lease.unit.property.name, unit=lease.unit.unit_number) }}</div></div>
   <div class="stat-tile"><div class="label">{{ _('Monthly Rent') }}</div><div class="value">{{ "%.2f"|format(lease.current_monthly_rent) }}</div></div>
   <div class="stat-tile"><div class="label">{{ _('Balance Due') }}</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
 </div>
@@ -39,7 +39,7 @@
   </div>
   <div class="card">
     <div class="flex-between">
-      <h3 style="margin:0">{{ _('My Maintenance Requests') }}</h3>
+      <h3 class="m-0">{{ _('My Maintenance Requests') }}</h3>
       <a href="{{ url_for('maintenance.add') }}" class="btn btn-sm">{{ _('+ New Request') }}</a>
     </div>
     {% if requests %}

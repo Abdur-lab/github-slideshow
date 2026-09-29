@@ -15,9 +15,9 @@
 {% if tenant.is_blacklisted %}
 <div class="flash flash-error">
   {{ _('Blacklisted: {reason}', reason=tenant.blacklist_reason) }}
-  <form method="post" action="{{ url_for('tenants.unblacklist', tenant_id=tenant.id) }}" style="display:inline">
+  <form class="d-inline" method="post" action="{{ url_for('tenants.unblacklist', tenant_id=tenant.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn btn-sm btn-secondary" type="submit" style="margin-left:0.5rem">{{ _('Remove Flag') }}</button>
+    <button class="ms-half btn btn-sm btn-secondary" type="submit">{{ _('Remove Flag') }}</button>
   </form>
 </div>
 {% else %}
@@ -25,8 +25,8 @@
   <form method="post" action="{{ url_for('tenants.blacklist', tenant_id=tenant.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="flex-between">
-      <input type="text" name="reason" placeholder="{{ _('Reason for blacklisting (required)') }}" style="flex:1;margin-right:0.5rem">
-      <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm(this.dataset.confirm);" data-confirm="{{ _('Blacklist this tenant? They will be blocked from future leases.') }}">{{ _('Blacklist Tenant') }}</button>
+      <input class="grow-input" type="text" name="reason" placeholder="{{ _('Reason for blacklisting (required)') }}">
+      <button class="btn btn-sm btn-danger" type="submit" data-confirm="{{ _('Blacklist this tenant? They will be blocked from future leases.') }}">{{ _('Blacklist Tenant') }}</button>
     </div>
   </form>
 </div>

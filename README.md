@@ -49,6 +49,7 @@ backend/
   extensions.py          db, csrf, limiter, cache, scheduler singletons
   models.py               13 SQLAlchemy models + business logic (balances, occupancy, numbering)
   security.py              auth, RBAC, IDOR guard, input validation, audit log
+  web_security.py           secret-key check at start-up, security headers
   scheduler_jobs.py         the 4 background jobs (UC-11, UC-14, UC-15, UC-23)
   seed.py                    Harare demo data (matches credentials below)
   i18n.py                     English/Shona/Arabic interface translation
@@ -107,7 +108,7 @@ All 25 use cases from the SRS are implemented, with a route and a covering test:
 ### Docker (recommended)
 
 ```bash
-cp env.example .env   # set SECRET_KEY at minimum
+cp env.example .env   # SECRET_KEY is required; compose will not start without it
 docker compose up --build
 # App:        http://localhost:5000
 # PostgreSQL: localhost:5432
@@ -264,7 +265,15 @@ map tiles themselves, which is unavoidable for any real map. Covered by
 - **CSRF** — Flask-WTF `CSRFProtect`, exempted only for the Stripe webhook.
 - **Account lockout** — 5 failed logins locks the account for 15 minutes.
 - **Open-redirect protection** — the login and language-switch `next=`
-  parameters are validated (netloc and scheme must be empty) before use.
+  parameters must be same-site paths (no scheme, host or backslash).
+- **Secret key required** — the app refuses to start when `SECRET_KEY` is
+  missing or a published placeholder, since that would let anyone forge a
+  login. With `FLASK_DEBUG=1` it uses a random key for that run instead.
+- **Security headers** — a Content-Security-Policy allowing scripts and styles
+  from this site only (no inline code), `X-Frame-Options: DENY`, `nosniff`,
+  a strict `Referrer-Policy`, and HSTS over HTTPS.
+- **Session cookie** — `HttpOnly` and `SameSite=Lax`; set
+  `SESSION_COOKIE_SECURE=true` in production so it is only sent over HTTPS.
 - **Stripe webhook verification** — manual `t=<ts>,v1=<hmac>` HMAC check
   with a 300-second replay window, independent of the Stripe SDK's own
   verifier so it's unit-testable offline; idempotent on `gateway_ref`.
