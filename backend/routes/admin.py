@@ -6,6 +6,7 @@ import secrets
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
+from backend.i18n import translate as _
 from backend.extensions import db
 from backend.models import MANAGEMENT_ROLES, ROLE_ADMIN, ROLE_OWNER, ROLE_STAFF, ROLES, PasswordReset, User
 from backend.security import audit_log, current_user, role_required, validate
@@ -30,7 +31,7 @@ def edit_user(user_id):
     new_active = request.form.get("is_active") == "on"
 
     if new_role not in ROLES:
-        flash("Invalid role.", "error")
+        flash(_("Invalid role."), "error")
         return redirect(url_for("admin.users"))
 
     would_remove_last_owner = (
@@ -40,7 +41,7 @@ def edit_user(user_id):
     if would_remove_last_owner:
         remaining_owners = User.query.filter(User.role == ROLE_OWNER, User.is_active.is_(True), User.id != target.id).count()
         if remaining_owners == 0:
-            flash("Every account must have at least one active Property Owner. This change was blocked.", "error")
+            flash(_("Every account must have at least one active Property Owner. This change was blocked."), "error")
             return redirect(url_for("admin.users"))
 
     old_role, old_active = target.role, target.is_active
@@ -55,7 +56,7 @@ def edit_user(user_id):
         new_value={"role": new_role, "is_active": new_active},
     )
     send_email(target, "Your RentalPro account was updated", f"Your account role is now {new_role.replace('_', ' ').title()}.")
-    flash(f"Updated {target.full_name}.", "success")
+    flash(_("Updated {name}.", name=target.full_name), "success")
     return redirect(url_for("admin.users"))
 
 
@@ -68,17 +69,17 @@ def add_staff():
 
         errors = []
         if not full_name:
-            errors.append("Full name is required.")
+            errors.append(_("Full name is required."))
         if not validate("email", email):
-            errors.append("A valid email address is required.")
+            errors.append(_("A valid email address is required."))
         elif User.query.filter_by(email=email).first():
-            errors.append("A user with this email already exists.")
+            errors.append(_("A user with this email already exists."))
         if errors:
             for e in errors:
                 flash(e, "error")
             return render_template("admin/add_staff.html", form=request.form)
 
-        first_name, _, last_name = full_name.partition(" ")
+        first_name, _sep, last_name = full_name.partition(" ")
         user = User(email=email, first_name=first_name or full_name, last_name=last_name or "-", role=ROLE_STAFF)
         user.set_password(secrets.token_urlsafe(16))
         db.session.add(user)
@@ -91,6 +92,6 @@ def add_staff():
         link = url_for("auth.reset_password", token=reset.token, _external=True)
         send_email(user, "Welcome to RentalPro", f"A Maintenance Staff account has been created for you. Set your password: {link}")
 
-        flash(f"Staff account created for {user.full_name}.", "success")
+        flash(_("Staff account created for {name}.", name=user.full_name), "success")
         return redirect(url_for("admin.users") if current_user().role == ROLE_ADMIN else url_for("maintenance.index"))
     return render_template("admin/add_staff.html", form={})

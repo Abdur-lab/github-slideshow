@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros.html" import status_badge %}
-{% block title %}Properties — RentalPro{% endblock %}
+{% block title %}{{ _('Properties') }} — RentalPro{% endblock %}
 {% block content %}
 <div class="flex-between">
   <h1>{{ _('Properties') }}</h1>
@@ -20,7 +20,7 @@
       <h3 style="margin:0"><a href="{{ url_for('properties.detail', property_id=p.id) }}">{{ p.name }}</a></h3>
       {{ status_badge(p.status) }}
     </div>
-    <p class="text-muted">{{ p.property_code }} &middot; {{ p.type }}</p>
+    <p class="text-muted">{{ p.property_code }} &middot; {{ p.type|label }}</p>
     <p>{{ p.address }}, {{ p.city }}, {{ p.country }}</p>
     <p class="text-muted">{{ _('Occupancy: {rate}%', rate=p.occupancy_rate) }}</p>
   </div>

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Properties Map — RentalPro{% endblock %}
+{% block title %}{{ _('Properties Map') }} — RentalPro{% endblock %}
 {% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
 <div class="flex-between">
-  <h1>Properties Map</h1>
-  <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">List View</a>
+  <h1>{{ _('Properties Map') }}</h1>
+  <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">{{ _('List View') }}</a>
 </div>
 
 {% if located %}
@@ -15,12 +15,12 @@
 [{% for p in located %}{"name": {{ p.name|tojson }}, "code": {{ p.property_code|tojson }}, "occupancy": {{ p.occupancy_rate }}, "lat": {{ p.latitude }}, "lng": {{ p.longitude }}, "url": {{ url_for('properties.detail', property_id=p.id)|tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]
 </script>
 {% if located|length < properties|length %}
-<p class="map-hint mt-1">{{ properties|length - located|length }} of {{ properties|length }} propert{{ 'y has' if properties|length - located|length == 1 else 'ies have' }} no map location set yet — add coordinates from the property's Edit page to show it here.</p>
+<p class="map-hint mt-1">{% set missing = properties|length - located|length %}{% if missing == 1 %}{{ _("1 of {total} properties has no map location set yet — add coordinates from the property's Edit page to show it here.", total=properties|length) }}{% else %}{{ _("{count} of {total} properties have no map location set yet — add coordinates from the property's Edit page to show it here.", count=missing, total=properties|length) }}{% endif %}</p>
 {% endif %}
 {% else %}
 <div class="empty-state">
-  <p>No properties have a map location set yet.</p>
-  <p class="text-muted">Add coordinates from a property's Add or Edit page to see it here.</p>
+  <p>{{ _('No properties have a map location set yet.') }}</p>
+  <p class="text-muted">{{ _("Add coordinates from a property's Add or Edit page to see it here.") }}</p>
 </div>
 {% endif %}
 {% endblock %}

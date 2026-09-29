@@ -1,75 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Add Property — RentalPro{% endblock %}
+{% block title %}{{ _('Add Property') }} — RentalPro{% endblock %}
 {% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
-<h1>Add New Property</h1>
+<h1>{{ _('Add New Property') }}</h1>
 <div class="card" style="max-width:600px">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
-      <label for="name">Property name</label>
+      <label for="name">{{ _('Property name') }}</label>
       <input type="text" id="name" name="name" value="{{ form.get('name', '') }}" required>
     </div>
     <div class="field">
-      <label for="address">Address</label>
+      <label for="address">{{ _('Address') }}</label>
       <input type="text" id="address" name="address" value="{{ form.get('address', '') }}" required>
     </div>
     <div class="grid grid-2">
       <div class="field">
-        <label for="city">City</label>
+        <label for="city">{{ _('City') }}</label>
         <input type="text" id="city" name="city" value="{{ form.get('city', '') }}" required>
       </div>
       <div class="field">
-        <label for="country">Country</label>
+        <label for="country">{{ _('Country') }}</label>
         <input type="text" id="country" name="country" value="{{ form.get('country', '') }}" required>
       </div>
     </div>
     <div class="grid grid-2">
       <div class="field">
-        <label for="type">Type</label>
+        <label for="type">{{ _('Type') }}</label>
         <select id="type" name="type">
-          {% for t in types %}<option value="{{ t }}" {% if form.get('type') == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+          {% for t in types %}<option value="{{ t }}" {% if form.get('type') == t %}selected{% endif %}>{{ t|label }}</option>{% endfor %}
         </select>
       </div>
       <div class="field">
-        <label for="currency">Currency</label>
+        <label for="currency">{{ _('Currency') }}</label>
         <input type="text" id="currency" name="currency" value="{{ form.get('currency', 'USD') }}" maxlength="3">
       </div>
     </div>
     <div class="field">
-      <label for="description">Description</label>
+      <label for="description">{{ _('Description') }}</label>
       <textarea id="description" name="description">{{ form.get('description', '') }}</textarea>
     </div>
     <div class="grid grid-2">
       <div class="field">
-        <label for="late_fee_type">Late fee</label>
+        <label for="late_fee_type">{{ _('Late fee') }}</label>
         <select id="late_fee_type" name="late_fee_type">
-          {% for t in late_fee_types %}<option value="{{ t }}" {% if form.get('late_fee_type', 'NONE') == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+          {% for t in late_fee_types %}<option value="{{ t }}" {% if form.get('late_fee_type', 'NONE') == t %}selected{% endif %}>{{ t|label }}</option>{% endfor %}
         </select>
       </div>
       <div class="field">
-        <label for="late_fee_amount">Amount (fixed) or % (percentage)</label>
+        <label for="late_fee_amount">{{ _('Amount (fixed) or % (percentage)') }}</label>
         <input type="number" step="0.01" id="late_fee_amount" name="late_fee_amount" value="{{ form.get('late_fee_amount', '') }}">
       </div>
     </div>
     <div class="field">
-      <label>Map location (optional)</label>
+      <label>{{ _('Map location (optional)') }}</label>
       <div class="grid grid-2">
-        <input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" placeholder="Latitude" value="{{ form.get('latitude', '') }}">
-        <input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" placeholder="Longitude" value="{{ form.get('longitude', '') }}">
+        <input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" placeholder="{{ _('Latitude') }}" value="{{ form.get('latitude', '') }}">
+        <input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" placeholder="{{ _('Longitude') }}" value="{{ form.get('longitude', '') }}">
       </div>
       <div id="add-property-map" class="map-container map-picker mt-1" data-map-picker
            data-lat-input="latitude" data-lng-input="longitude"
            data-default-lat="-17.8292" data-default-lng="31.0522" data-default-zoom="12"
            data-clear-button="clear-location"></div>
-      <p class="map-hint">Click the map to drop a pin, or type coordinates directly. <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">Clear location</button></p>
+      <p class="map-hint">{{ _('Click the map to drop a pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">{{ _('Clear location') }}</button></p>
     </div>
     <div class="field">
-      <label for="photos">Property photos (up to 10, JPG/PNG, max 5 MB each)</label>
+      <label for="photos">{{ _('Property photos (up to 10, JPG/PNG, max 5 MB each)') }}</label>
       <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
     </div>
-    <button class="btn" type="submit">Save Property</button>
-    <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">Cancel</a>
+    <button class="btn" type="submit">{{ _('Save Property') }}</button>
+    <a href="{{ url_for('properties.index') }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
   </form>
 </div>
 {% endblock %}

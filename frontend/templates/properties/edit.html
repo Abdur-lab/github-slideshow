@@ -1,48 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Edit {{ property.name }} — RentalPro{% endblock %}
+{% block title %}{{ _('Edit {name}', name=property.name) }} — RentalPro{% endblock %}
 {% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
-<h1>Edit {{ property.name }}</h1>
+<h1>{{ _('Edit {name}', name=property.name) }}</h1>
 <div class="card" style="max-width:600px">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
-      <label for="description">Description</label>
+      <label for="description">{{ _('Description') }}</label>
       <textarea id="description" name="description">{{ property.description or '' }}</textarea>
     </div>
     <div class="grid grid-2">
       <div class="field">
-        <label for="late_fee_type">Late fee</label>
+        <label for="late_fee_type">{{ _('Late fee') }}</label>
         <select id="late_fee_type" name="late_fee_type">
-          {% for t in late_fee_types %}<option value="{{ t }}" {% if property.late_fee_type == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+          {% for t in late_fee_types %}<option value="{{ t }}" {% if property.late_fee_type == t %}selected{% endif %}>{{ t|label }}</option>{% endfor %}
         </select>
       </div>
       <div class="field">
-        <label for="late_fee_amount">Amount (fixed) or % (percentage)</label>
+        <label for="late_fee_amount">{{ _('Amount (fixed) or % (percentage)') }}</label>
         <input type="number" step="0.01" id="late_fee_amount" name="late_fee_amount" value="{{ property.late_fee_amount }}">
       </div>
     </div>
     <div class="field">
-      <label for="electricity_rate">Electricity rate (per unit of consumption, 0 = not billed)</label>
+      <label for="electricity_rate">{{ _('Electricity rate (per unit of consumption, 0 = not billed)') }}</label>
       <input type="number" step="0.01" min="0" id="electricity_rate" name="electricity_rate" value="{{ property.electricity_rate }}">
     </div>
 
     <div class="field">
-      <label>Map location (optional)</label>
+      <label>{{ _('Map location (optional)') }}</label>
       <div class="grid grid-2">
-        <input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" placeholder="Latitude" value="{{ property.latitude if property.latitude is not none else '' }}">
-        <input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" placeholder="Longitude" value="{{ property.longitude if property.longitude is not none else '' }}">
+        <input type="number" step="any" min="-90" max="90" id="latitude" name="latitude" placeholder="{{ _('Latitude') }}" value="{{ property.latitude if property.latitude is not none else '' }}">
+        <input type="number" step="any" min="-180" max="180" id="longitude" name="longitude" placeholder="{{ _('Longitude') }}" value="{{ property.longitude if property.longitude is not none else '' }}">
       </div>
       <div id="edit-property-map" class="map-container map-picker mt-1" data-map-picker
            data-lat-input="latitude" data-lng-input="longitude"
            data-default-lat="-17.8292" data-default-lng="31.0522" data-default-zoom="12"
            data-clear-button="clear-location"></div>
-      <p class="map-hint">Click the map to move the pin, or type coordinates directly. <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">Clear location</button></p>
+      <p class="map-hint">{{ _('Click the map to move the pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">{{ _('Clear location') }}</button></p>
     </div>
 
     {% if property.photo_paths %}
     <div class="field">
-      <label>Current photos ({{ property.photo_paths|length }}/10)</label>
+      <label>{{ _('Current photos ({count}/10)', count=property.photo_paths|length) }}</label>
       <div class="grid grid-4">
         {% for p in property.photo_paths %}
           <img src="{{ url_for('properties.property_photo', property_id=property.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
@@ -51,12 +51,12 @@
     </div>
     {% endif %}
     <div class="field">
-      <label for="photos">Add more photos (JPG/PNG, max 5 MB each)</label>
+      <label for="photos">{{ _('Add more photos (JPG/PNG, max 5 MB each)') }}</label>
       <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple>
     </div>
 
-    <button class="btn" type="submit">Save Changes</button>
-    <a href="{{ url_for('properties.detail', property_id=property.id) }}" class="btn btn-secondary">Cancel</a>
+    <button class="btn" type="submit">{{ _('Save Changes') }}</button>
+    <a href="{{ url_for('properties.detail', property_id=property.id) }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
   </form>
 </div>
 {% endblock %}

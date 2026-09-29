@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 from sqlalchemy import and_, or_
 
+from backend.i18n import label, ltr, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -50,17 +51,17 @@ def record():
 
         errors = []
         if not lease:
-            errors.append("Please select a tenant/lease.")
+            errors.append(_("Please select a tenant/lease."))
         if not validate("positive_float", amount):
-            errors.append("Amount must be a positive number.")
+            errors.append(_("Amount must be a positive number."))
         paid_at = date.today()
         if paid_at_raw:
             if not validate("date", paid_at_raw):
-                errors.append("Payment date is invalid.")
+                errors.append(_("Payment date is invalid."))
             else:
                 paid_at = date.fromisoformat(paid_at_raw)
                 if paid_at > date.today():
-                    flash("Payment date is in the future — please confirm this is correct.", "warning")
+                    flash(_("Payment date is in the future — please confirm this is correct."), "warning")
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -83,7 +84,7 @@ def record():
             "Rent payment received",
             f"We received your payment of {payment.amount:.2f} ({payment.receipt_number}). Remaining balance: {lease.balance:.2f}.",
         )
-        flash(f"Payment recorded. Receipt {payment.receipt_number}.", "success")
+        flash(_("Payment recorded. Receipt {receipt}.", receipt=payment.receipt_number), "success")
         return redirect(url_for("rent.index"))
 
     return render_template("rent/record_payment.html", lease=lease, active_leases=active_leases, methods=PAYMENT_METHODS)
@@ -166,11 +167,11 @@ def _parse_period(args):
     if not start_raw and not end_raw:
         return None, None, None
     if not (validate("date", start_raw) and validate("date", end_raw)):
-        return None, None, "Statement period dates are invalid."
+        return None, None, _("Statement period dates are invalid.")
     period_start = date.fromisoformat(start_raw)
     period_end = date.fromisoformat(end_raw)
     if period_end < period_start:
-        return None, None, "Statement end date must be on or after the start date."
+        return None, None, _("Statement end date must be on or after the start date.")
     return period_start, period_end, None
 
 
@@ -260,9 +261,9 @@ def add_charge(lease_id):
     if charge_type not in CHARGE_TYPES:
         charge_type = "OPERATIONAL"
     if not description:
-        errors.append("A description is required for the charge.")
+        errors.append(_("A description is required for the charge."))
     if not validate("positive_float", amount):
-        errors.append("Charge amount must be a positive number.")
+        errors.append(_("Charge amount must be a positive number."))
     if errors:
         for e in errors:
             flash(e, "error")
@@ -284,7 +285,7 @@ def add_charge(lease_id):
         f"A {charge_type.title()} charge of {charge.amount:.2f} ({description}) was added to your unit {lease.unit.unit_code}. "
         f"Updated balance: {lease.balance:.2f}.",
     )
-    flash(f"{charge_type.title()} charge of {charge.amount:.2f} added.", "success")
+    flash(_("{type} charge of {amount} added.", type=label(charge_type), amount=f"{charge.amount:.2f}"), "success")
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
 
@@ -300,7 +301,7 @@ def add_meter_reading(lease_id):
     reading_date = date.today()
     if reading_date_raw:
         if not validate("date", reading_date_raw):
-            errors.append("Reading date is invalid.")
+            errors.append(_("Reading date is invalid."))
         else:
             reading_date = date.fromisoformat(reading_date_raw)
 
@@ -309,12 +310,18 @@ def add_meter_reading(lease_id):
         if reading_value < 0:
             raise ValueError
     except (TypeError, ValueError):
-        errors.append("Meter reading must be a non-negative number.")
+        errors.append(_("Meter reading must be a non-negative number."))
         reading_value = None
 
     previous = unit.latest_meter_reading
     if reading_value is not None and previous is not None and reading_value < previous.reading_value:
-        errors.append(f"Reading ({reading_value}) is lower than the last recorded reading ({previous.reading_value}).")
+        errors.append(
+            _(
+                "Reading ({value}) is lower than the last recorded reading ({previous}).",
+                value=reading_value,
+                previous=previous.reading_value,
+            )
+        )
 
     if errors:
         for e in errors:
@@ -357,14 +364,14 @@ def add_meter_reading(lease_id):
             f"An electricity charge of {amount:.2f} ({consumption} units) was added to your unit {unit.unit_code}. "
             f"Updated balance: {unit.active_lease.balance:.2f}.",
         )
-        flash(f"Reading recorded. Electricity charge of {amount:.2f} added.", "success")
+        flash(_("Reading recorded. Electricity charge of {amount} added.", amount=f"{amount:.2f}"), "success")
     else:
         db.session.commit()
         audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value})
         if consumption is not None and not unit.active_lease:
-            flash("Reading recorded. This unit has no active lease, so no charge was billed.", "warning")
+            flash(_("Reading recorded. This unit has no active lease, so no charge was billed."), "warning")
         else:
-            flash("Reading recorded as the baseline for this unit.", "success")
+            flash(_("Reading recorded as the baseline for this unit."), "success")
 
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
@@ -379,11 +386,11 @@ def revise_rent(lease_id):
 
     errors = []
     if not validate("date", effective_date_raw):
-        errors.append("A valid effective date is required.")
+        errors.append(_("A valid effective date is required."))
     elif date.fromisoformat(effective_date_raw) < lease.start_date:
-        errors.append("Effective date cannot be before the lease start date.")
+        errors.append(_("Effective date cannot be before the lease start date."))
     if not validate("positive_float", monthly_rent):
-        errors.append("Revised monthly rent must be a positive number.")
+        errors.append(_("Revised monthly rent must be a positive number."))
     if errors:
         for e in errors:
             flash(e, "error")
@@ -410,7 +417,14 @@ def revise_rent(lease_id):
         f"Your monthly rent for unit {lease.unit.unit_code} will change to {revision.monthly_rent:.2f}, "
         f"effective {revision.effective_date}.",
     )
-    flash(f"Rent revision recorded: {revision.monthly_rent:.2f} effective {revision.effective_date}.", "success")
+    flash(
+        _(
+            "Rent revision recorded: {amount} effective {date}.",
+            amount=f"{revision.monthly_rent:.2f}",
+            date=ltr(revision.effective_date),
+        ),
+        "success",
+    )
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
 

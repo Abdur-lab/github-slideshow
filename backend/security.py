@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from flask import abort, g, has_request_context, redirect, request, session, url_for
 
 from backend.extensions import db
+from backend.i18n import translate
 from backend.models import AuditLog, Property, ROLE_ADMIN, ROLE_MANAGER, ROLE_OWNER, ROLE_STAFF, ROLE_TENANT, User
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -218,14 +219,18 @@ def validate_photos(files, max_count: int, *, action: str = "uploaded", report_e
     errors = []
     if len(files) > max_count:
         if report_excess:
-            errors.append(f"You may upload at most {max_count} photos at a time.")
+            errors.append(translate("You may upload at most {count} photos at a time.", count=max_count))
         files = files[:max_count]
     valid = []
     for f in files:
         if validate_upload(f, allowed_ext=IMAGE_EXTENSIONS, max_bytes=MAX_IMAGE_BYTES):
             valid.append(f)
         else:
-            errors.append(f'"{f.filename}" is not a valid JPG/PNG under 5 MB and was not {action}.')
+            if action == "attached":
+                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not attached.'
+            else:
+                message = '"{filename}" is not a valid JPG/PNG under 5 MB and was not uploaded.'
+            errors.append(translate(message, filename=f.filename))
     return valid, errors
 
 

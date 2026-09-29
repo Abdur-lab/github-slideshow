@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from backend.i18n import label, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -66,23 +67,23 @@ def add():
 
         errors = []
         if not name:
-            errors.append("Property name is required.")
+            errors.append(_("Property name is required."))
         if not address:
-            errors.append("Address is required.")
+            errors.append(_("Address is required."))
         if not city:
-            errors.append("City is required.")
+            errors.append(_("City is required."))
         if not country:
-            errors.append("Country is required.")
+            errors.append(_("Country is required."))
         if name and Property.query.filter_by(owner_id=owner.id, name=name).first():
-            errors.append("You already have a property with this name.")
+            errors.append(_("You already have a property with this name."))
         if late_fee_type not in LATE_FEE_TYPES:
             late_fee_type = "NONE"
         if late_fee_type != "NONE" and not validate("positive_float", late_fee_amount):
-            errors.append("Late fee amount must be a positive number when a late fee type is selected.")
+            errors.append(_("Late fee amount must be a positive number when a late fee type is selected."))
         if bool(latitude) != bool(longitude):
-            errors.append("Set both latitude and longitude, or leave the map location blank.")
+            errors.append(_("Set both latitude and longitude, or leave the map location blank."))
         elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
-            errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
+            errors.append(_("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180."))
         photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         if errors:
@@ -110,7 +111,7 @@ def add():
         prop.photo_paths = save_uploads(photos, f"properties/{prop.id}", MAX_PROPERTY_PHOTOS)
         db.session.commit()
         audit_log("property_created", "Property", prop.id, new_value={"name": name})
-        flash(f"Property {prop.property_code} created.", "success")
+        flash(_("Property {code} created.", code=prop.property_code), "success")
         return redirect(url_for("properties.detail", property_id=prop.id))
     return render_template("properties/add.html", types=PROPERTY_TYPES, late_fee_types=LATE_FEE_TYPES, form={})
 
@@ -141,13 +142,13 @@ def add_expense(property_id):
     if category not in EXPENSE_CATEGORIES:
         category = "OTHER"
     if not description:
-        errors.append("A description is required for the expense.")
+        errors.append(_("A description is required for the expense."))
     if not validate("positive_float", amount):
-        errors.append("Expense amount must be a positive number.")
+        errors.append(_("Expense amount must be a positive number."))
     incurred_at = date.today()
     if incurred_at_raw:
         if not validate("date", incurred_at_raw):
-            errors.append("Expense date is invalid.")
+            errors.append(_("Expense date is invalid."))
         else:
             incurred_at = date.fromisoformat(incurred_at_raw)
     if errors:
@@ -166,7 +167,10 @@ def add_expense(property_id):
     db.session.add(expense)
     db.session.commit()
     audit_log("property_expense_added", "PropertyExpense", expense.id, new_value={"category": category, "amount": float(amount)})
-    flash(f"{category.replace('_', ' ').title()} expense of {expense.amount:.2f} recorded.", "success")
+    flash(
+        _("{category} expense of {amount} recorded.", category=label(category), amount=f"{expense.amount:.2f}"),
+        "success",
+    )
     return redirect(url_for("properties.detail", property_id=prop.id))
 
 
@@ -187,23 +191,23 @@ def edit(property_id):
         if late_fee_type not in LATE_FEE_TYPES:
             late_fee_type = "NONE"
         if late_fee_type != "NONE" and not validate("positive_float", late_fee_amount):
-            errors.append("Late fee amount must be a positive number when a late fee type is selected.")
+            errors.append(_("Late fee amount must be a positive number when a late fee type is selected."))
         try:
             electricity_rate_val = float(electricity_rate)
             if electricity_rate_val < 0:
                 raise ValueError
         except (TypeError, ValueError):
-            errors.append("Electricity rate must be a non-negative number.")
+            errors.append(_("Electricity rate must be a non-negative number."))
             electricity_rate_val = prop.electricity_rate
         if bool(latitude) != bool(longitude):
-            errors.append("Set both latitude and longitude, or leave the map location blank.")
+            errors.append(_("Set both latitude and longitude, or leave the map location blank."))
         elif latitude and (not validate("latitude", latitude) or not validate("longitude", longitude)):
-            errors.append("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180.")
+            errors.append(_("Map location is invalid — latitude must be -90 to 90 and longitude -180 to 180."))
         new_photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_PROPERTY_PHOTOS)
         errors.extend(photo_errors)
         existing = len(prop.photo_paths or [])
         if existing + len(new_photos) > MAX_PROPERTY_PHOTOS:
-            errors.append(f"A property may have at most {MAX_PROPERTY_PHOTOS} photos in total.")
+            errors.append(_("A property may have at most {count} photos in total.", count=MAX_PROPERTY_PHOTOS))
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -220,7 +224,7 @@ def edit(property_id):
             prop.photo_paths = list(prop.photo_paths or []) + saved
         db.session.commit()
         audit_log("property_updated", "Property", prop.id, new_value={"late_fee_type": late_fee_type})
-        flash("Property updated.", "success")
+        flash(_("Property updated."), "success")
         return redirect(url_for("properties.detail", property_id=prop.id))
     return render_template("properties/edit.html", property=prop, late_fee_types=LATE_FEE_TYPES)
 
@@ -240,11 +244,11 @@ def add_unit(property_id):
 
         errors = []
         if not unit_number:
-            errors.append("Unit number is required.")
+            errors.append(_("Unit number is required."))
         elif Unit.query.filter_by(property_id=prop.id, unit_number=unit_number).first():
-            errors.append("Unit number already in use in this property.")
+            errors.append(_("Unit number already in use in this property."))
         if not validate("positive_float", monthly_rent):
-            errors.append("Monthly rent must be a positive number.")
+            errors.append(_("Monthly rent must be a positive number."))
         photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
         errors.extend(photo_errors)
         if errors:
@@ -267,7 +271,7 @@ def add_unit(property_id):
         unit.photo_paths = save_uploads(photos, f"units/{unit.id}", MAX_UNIT_PHOTOS)
         db.session.commit()
         audit_log("unit_created", "Unit", unit.id, new_value={"unit_number": unit_number})
-        flash(f"Unit {unit.unit_code} added.", "success")
+        flash(_("Unit {code} added.", code=unit.unit_code), "success")
         return redirect(url_for("properties.detail", property_id=prop.id))
     return render_template("properties/add_unit.html", property=prop, types=UNIT_TYPES, form={})
 
@@ -288,18 +292,18 @@ def edit_unit(property_id, unit_id):
 
         errors = []
         if not validate("positive_float", monthly_rent):
-            errors.append("Monthly rent must be a positive number.")
+            errors.append(_("Monthly rent must be a positive number."))
         if new_status == "OCCUPIED" and not unit.active_lease:
-            errors.append("Occupancy status is set automatically when a lease is activated; it cannot be set to Occupied here.")
+            errors.append(_("Occupancy status is set automatically when a lease is activated; it cannot be set to Occupied here."))
             new_status = unit.status
         if new_status == "VACANT" and unit.active_lease:
-            errors.append("This unit has an active lease and cannot be manually set to Vacant.")
+            errors.append(_("This unit has an active lease and cannot be manually set to Vacant."))
             new_status = unit.status
         new_photos, photo_errors = validate_photos(request.files.getlist("photos"), MAX_UNIT_PHOTOS)
         errors.extend(photo_errors)
         existing = len(unit.photo_paths or [])
         if existing + len(new_photos) > MAX_UNIT_PHOTOS:
-            errors.append(f"A unit may have at most {MAX_UNIT_PHOTOS} photos in total.")
+            errors.append(_("A unit may have at most {count} photos in total.", count=MAX_UNIT_PHOTOS))
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -317,7 +321,7 @@ def edit_unit(property_id, unit_id):
             unit.photo_paths = list(unit.photo_paths or []) + saved
         db.session.commit()
         audit_log("unit_updated", "Unit", unit.id, new_value={"status": unit.status, "monthly_rent": unit.monthly_rent})
-        flash("Unit updated.", "success")
+        flash(_("Unit updated."), "success")
         return redirect(url_for("properties.detail", property_id=prop.id))
     return render_template("properties/edit_unit.html", property=prop, unit=unit, types=UNIT_TYPES)
 
@@ -341,7 +345,7 @@ def archive(property_id):
     prop = db.get_or_404(Property, property_id)
     active_leases = Lease.query.join(Unit).filter(Unit.property_id == prop.id, Lease.status == "ACTIVE").count()
     if active_leases:
-        flash("This property has active leases. Terminate them before archiving.", "error")
+        flash(_("This property has active leases. Terminate them before archiving."), "error")
         return redirect(url_for("properties.detail", property_id=property_id))
     prop.status = "ARCHIVED"
     for u in prop.units:
@@ -349,7 +353,7 @@ def archive(property_id):
             u.status = "ARCHIVED"
     db.session.commit()
     audit_log("property_archived", "Property", prop.id)
-    flash("Property archived.", "success")
+    flash(_("Property archived."), "success")
     return redirect(url_for("properties.index"))
 
 
@@ -359,12 +363,12 @@ def archive_unit(property_id, unit_id):
     assert_owner(property_id)
     unit = Unit.query.filter_by(id=unit_id, property_id=property_id).first_or_404()
     if unit.active_lease:
-        flash("This unit has an active lease. Please terminate the lease before archiving.", "error")
+        flash(_("This unit has an active lease. Please terminate the lease before archiving."), "error")
         return redirect(url_for("properties.detail", property_id=property_id))
     unit.status = "ARCHIVED"
     db.session.commit()
     audit_log("unit_archived", "Unit", unit.id)
-    flash("Unit archived.", "success")
+    flash(_("Unit archived."), "success")
     return redirect(url_for("properties.detail", property_id=property_id))
 
 

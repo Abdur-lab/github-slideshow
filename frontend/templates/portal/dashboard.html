@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros.html" import status_badge %}
-{% block title %}My Dashboard — RentalPro{% endblock %}
+{% block title %}{{ _('My Dashboard') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Welcome, {name}', name=tenant.user.full_name) }}</h1>
 

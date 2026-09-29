@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from backend.i18n import translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -48,7 +49,7 @@ def add():
         abort(403)
     lease = tenant.active_lease
     if not lease:
-        flash("You do not have an active lease. Please contact your property manager.", "error")
+        flash(_("You do not have an active lease. Please contact your property manager."), "error")
         return redirect(url_for("portal.index"))
 
     open_count = tenant.maintenance_requests.filter(MaintenanceRequest.status.notin_(["COMPLETED", "CLOSED"])).count()
@@ -61,11 +62,16 @@ def add():
 
         errors = []
         if open_count >= MAX_OPEN_REQUESTS_PER_TENANT:
-            errors.append(f"You already have {MAX_OPEN_REQUESTS_PER_TENANT} open requests. Please wait for one to be resolved.")
+            errors.append(
+                _(
+                    "You already have {count} open requests. Please wait for one to be resolved.",
+                    count=MAX_OPEN_REQUESTS_PER_TENANT,
+                )
+            )
         if not title:
-            errors.append("Title is required.")
+            errors.append(_("Title is required."))
         if not description:
-            errors.append("Description is required.")
+            errors.append(_("Description is required."))
         photos, photo_errors = validate_photos(
             request.files.getlist("photos"), MAX_REQUEST_PHOTOS, action="attached", report_excess=False
         )
@@ -100,7 +106,7 @@ def add():
         if req.severity == "EMERGENCY":
             send_sms(owner, f"EMERGENCY maintenance request {req.ticket_number}: {title}")
 
-        flash(f"Request submitted. Ticket number {req.ticket_number}.", "success")
+        flash(_("Request submitted. Ticket number {ticket}.", ticket=req.ticket_number), "success")
         return redirect(url_for("portal.index"))
 
     return render_template("maintenance/add.html", categories=MAINT_CATEGORIES, severities=MAINT_SEVERITIES, form={})
@@ -142,14 +148,14 @@ def update(request_id):
         target_date_raw = request.form.get("target_date")
         staff = User.query.filter_by(id=staff_id, role=ROLE_STAFF).first()
         if not staff:
-            flash("Please choose a valid staff member.", "error")
+            flash(_("Please choose a valid staff member."), "error")
             return redirect(url_for("maintenance.detail", request_id=req.id))
         req.assigned_to = staff.id
         req.status = "ASSIGNED"
         if target_date_raw and validate("date", target_date_raw):
             req.target_date = date.fromisoformat(target_date_raw)
         elif target_date_raw:
-            flash("Target date was invalid and was not saved.", "warning")
+            flash(_("Target date was invalid and was not saved."), "warning")
         note = request.form.get("notes", "").strip()
         if note:
             db.session.add(MaintenanceNote(request_id=req.id, author_id=user.id, note=note))
@@ -157,7 +163,7 @@ def update(request_id):
         audit_log("maintenance_assigned", "MaintenanceRequest", req.id, new_value={"staff_id": staff.id})
         send_email(staff, "Maintenance request assigned to you", f"Ticket {req.ticket_number}: {req.title}")
         send_email(req.tenant.user, "Your request has been assigned", f"Ticket {req.ticket_number} has been assigned to our team.")
-        flash("Request assigned.", "success")
+        flash(_("Request assigned."), "success")
 
     elif action in ("start", "complete"):
         if user.role != ROLE_STAFF or req.assigned_to != user.id:
@@ -178,7 +184,7 @@ def update(request_id):
         db.session.commit()
         audit_log("maintenance_status_update", "MaintenanceRequest", req.id, new_value={"status": req.status})
         send_email(req.tenant.user, "Maintenance request updated", f"Ticket {req.ticket_number} is now {req.status}.")
-        flash("Status updated.", "success")
+        flash(_("Status updated."), "success")
 
     elif action in ("close", "reopen"):
         is_owner_tenant = user.role == ROLE_TENANT and user.tenant_profile and req.tenant_id == user.tenant_profile.id
@@ -193,7 +199,7 @@ def update(request_id):
                 req.satisfaction_rating = max(1, min(5, int(rating)))
             db.session.commit()
             audit_log("maintenance_closed", "MaintenanceRequest", req.id)
-            flash("Request closed. Thank you!", "success")
+            flash(_("Request closed. Thank you!"), "success")
         else:
             reason = request.form.get("reason", "").strip()
             req.status = "SUBMITTED"
@@ -205,7 +211,7 @@ def update(request_id):
             audit_log("maintenance_reopened", "MaintenanceRequest", req.id, new_value={"reason": reason})
             owner = req.unit.property.owner
             send_email(owner, "Maintenance request reopened", f"Ticket {req.ticket_number} was reopened by the tenant.")
-            flash("Request reopened.", "success")
+            flash(_("Request reopened."), "success")
     else:
         abort(400)
 
@@ -221,7 +227,7 @@ def add_cost(request_id):
     description = request.form.get("description", "").strip()
 
     if not validate("positive_float", amount):
-        flash("Cost amount must be a positive number.", "error")
+        flash(_("Cost amount must be a positive number."), "error")
         return redirect(url_for("maintenance.detail", request_id=req.id))
 
     cost = MaintenanceCost(
@@ -235,7 +241,7 @@ def add_cost(request_id):
     db.session.add(cost)
     db.session.commit()
     audit_log("maintenance_cost_logged", "MaintenanceCost", cost.id, new_value={"amount": float(amount)})
-    flash("Cost logged.", "success")
+    flash(_("Cost logged."), "success")
     return redirect(url_for("maintenance.detail", request_id=req.id))
 
 

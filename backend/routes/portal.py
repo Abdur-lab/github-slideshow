@@ -1,5 +1,6 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
+from backend.i18n import translate as _
 from backend.extensions import db
 from backend.models import ROLE_TENANT, Lease, MaintenanceRequest, RentPayment
 from backend.security import audit_log, current_user, role_required
@@ -32,12 +33,12 @@ def pay():
     tenant = _my_tenant()
     lease = tenant.active_lease
     if not lease:
-        flash("You do not have an active lease.", "error")
+        flash(_("You do not have an active lease."), "error")
         return redirect(url_for("portal.index"))
     if request.method == "POST":
         amount = lease.balance
         if amount <= 0:
-            flash("You have no outstanding balance.", "info")
+            flash(_("You have no outstanding balance."), "info")
             return redirect(url_for("portal.index"))
         session_info = create_checkout_session(lease, amount)
         return redirect(session_info["checkout_url"])
@@ -57,13 +58,13 @@ def pay_confirm(lease_id):
     ref = request.args.get("ref")
     amount = lease.balance
     if amount <= 0 or not ref:
-        flash("Nothing to confirm.", "info")
+        flash(_("Nothing to confirm."), "info")
         return redirect(url_for("portal.index"))
     payment = record_idempotent_payment(lease, amount, ref, recorded_by=current_user().id, method="ONLINE")
     audit_log("rent_paid_online", "RentPayment", payment.id, new_value={"amount": amount, "lease_id": lease.id})
     send_email(tenant.user, "Payment received", f"We received your online payment of {payment.amount:.2f} ({payment.receipt_number}).")
     send_email(lease.unit.property.owner, "Tenant payment received", f"{tenant.user.full_name} paid {payment.amount:.2f} online.")
-    flash("Payment successful. Thank you!", "success")
+    flash(_("Payment successful. Thank you!"), "success")
     return redirect(url_for("portal.index"))
 
 

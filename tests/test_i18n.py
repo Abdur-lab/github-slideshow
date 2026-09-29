@@ -63,7 +63,72 @@ def test_every_translation_keeps_its_placeholders():
 
 
 def test_arabic_covers_every_shona_phrase():
-    assert set(ARABIC) == set(SHONA)
+    assert set(SHONA) <= set(ARABIC)
+
+
+def _interface_phrases():
+    """Every English phrase the interface can show: _() calls in templates and
+    routes, plus the stored codes shown through the label filter and badges."""
+    import ast
+    import pathlib
+    import re
+
+    from backend import models
+    from backend.i18n import LABEL_ENGLISH
+
+    call = re.compile(r"""\b(?:_|translate)\(\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
+    root = pathlib.Path(__file__).resolve().parent.parent
+    sources = list((root / "frontend" / "templates").rglob("*.html")) + list((root / "backend").rglob("*.py"))
+    phrases = {}
+    for path in sources:
+        if path.name == "i18n.py":
+            continue
+        for match in call.finditer(path.read_text(encoding="utf-8")):
+            phrases.setdefault(ast.literal_eval(match.group(1)), path.name)
+    for name in ("ROLES", "PROPERTY_TYPES", "LATE_FEE_TYPES", "UNIT_TYPES", "PAYMENT_METHODS",
+                 "CHARGE_TYPES", "EXPENSE_CATEGORIES", "MAINT_CATEGORIES", "MAINT_SEVERITIES"):
+        for code in getattr(models, name):
+            phrases.setdefault(LABEL_ENGLISH.get(code, code.replace("_", " ").title()), name)
+    for name in ("UNIT_STATUSES", "LEASE_STATUSES", "MAINT_STATUSES", "PROPERTY_STATUSES"):
+        for code in getattr(models, name):
+            phrases.setdefault(code.replace("_", " "), name)
+    return phrases
+
+
+def test_every_interface_phrase_has_arabic():
+    phrases = _interface_phrases()
+    assert len(phrases) > 400
+    missing = {phrase: source for phrase, source in phrases.items() if phrase not in ARABIC}
+    assert not missing
+
+
+def test_messages_after_an_action_are_shown_in_arabic(client, owner):
+    client.get("/lang/ar")
+    resp = client.post("/login", data={"email": owner.email, "password": "wrong"}, follow_redirects=True)
+    assert "البريد الإلكتروني أو كلمة المرور غير صحيحة.".encode() in resp.data
+    assert b"Invalid email or password." not in resp.data
+
+
+def test_message_values_are_filled_into_the_arabic_sentence(client, owner, property_):
+    login(client, owner.email)
+    client.get("/lang/ar")
+    resp = client.post(
+        f"/properties/{property_.id}/add-unit",
+        data={"unit_number": "205", "type": "2BR", "monthly_rent": "700", "deposit": "700"},
+        follow_redirects=True,
+    )
+    assert "تمت إضافة الوحدة".encode() in resp.data
+    assert b"added." not in resp.data
+
+
+def test_stored_codes_are_shown_as_words_in_each_language(client, owner, property_):
+    login(client, owner.email)
+    assert b"Bank Transfer" in client.get("/rent/record").data
+    client.get("/lang/ar")
+    page = client.get("/rent/record").get_data(as_text=True)
+    assert "تحويل بنكي" in page
+    assert "BANK_TRANSFER" in page  # the submitted value stays the stored code
+    assert "Bank Transfer" not in page
 
 
 def test_switching_to_arabic_translates_and_turns_the_page_right_to_left(client):
