@@ -22,8 +22,7 @@ DEMO_PASSWORD = "demo123"
 
 
 def run_seed():
-    db.create_all()
-
+    """Load the demo data. Run `flask create-db` first so the schema exists."""
     if User.query.filter_by(email="owner@rentalpro.com").first():
         print("Seed data already present, skipping.")
         return

@@ -55,6 +55,7 @@ backend/
   i18n.py                     English/Shona/Arabic interface translation
   routes/                     auth, dashboard, properties, tenants, rent, portal, maintenance, reports, api
   services/                    notifications.py, payments.py, pdf.py, reports.py
+migrations/                   Alembic migrations (Flask-Migrate); see migrations/README
 frontend/
   templates/                  Jinja2 templates (base layout + one per page)
   static/css/style.css         design system
@@ -115,8 +116,9 @@ docker compose up --build
 # Redis:      localhost:6379
 ```
 
-The container entrypoint waits for Postgres, creates the schema (`flask
-create-db`), and seeds demo data (`flask seed-db`) automatically on first run.
+The container entrypoint waits for Postgres, applies the database migrations
+(`flask create-db`), and seeds demo data (`flask seed-db`) automatically on
+first run.
 
 ### Local (without Docker)
 
@@ -135,6 +137,21 @@ Any of `SENDGRID_API_KEY`, `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`, and
 `STRIPE_SECRET_KEY` can be left unset — email/SMS then log as `SENT`
 without calling an external API, and online payments use a simulated
 checkout, so the whole app is exercisable offline.
+
+### Database migrations
+
+The schema is managed by Alembic migrations in `migrations/`, so a model
+change never requires dropping a live database:
+
+```bash
+flask create-db                       # apply pending migrations (safe to re-run)
+flask db migrate -m "Add unit notes"  # after editing backend/models.py
+flask db upgrade                      # or: flask db downgrade
+```
+
+A database created before migrations existed (by the old `db.create_all()`)
+is recognised and recorded at the first migration, keeping its data.
+`tests/test_migrations.py` fails if the models and migrations ever differ.
 
 ## Demo Credentials
 

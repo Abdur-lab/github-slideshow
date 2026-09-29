@@ -3,7 +3,10 @@ import os
 from flask import Flask, jsonify, render_template
 
 from backend.config import Config
-from backend.extensions import cache, csrf, db, limiter, scheduler
+from backend.extensions import cache, csrf, db, limiter, migrate, scheduler
+
+
+MIGRATIONS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "migrations")
 
 
 def create_app(config_class=Config):
@@ -20,6 +23,8 @@ def create_app(config_class=Config):
     app.after_request(add_security_headers)
 
     db.init_app(app)
+    # render_as_batch lets Alembic alter columns on SQLite, which cannot ALTER in place.
+    migrate.init_app(app, db, directory=MIGRATIONS_DIR, render_as_batch=True)
     csrf.init_app(app)
     cache.init_app(app)
     if app.config.get("RATELIMIT_ENABLED", True):
@@ -122,12 +127,29 @@ def register_scheduler(app):
         scheduler.start()
 
 
+# The first migration: the schema db.create_all() used to build before migrations existed.
+INITIAL_REVISION = "bcde74b31ea7"
+
+
+def upgrade_database() -> str:
+    """Apply every pending migration. A database built earlier by db.create_all()
+    has the tables but no migration record, so it is marked as being at the
+    initial revision first instead of having its tables created again."""
+    from flask_migrate import stamp, upgrade
+
+    tables = set(db.inspect(db.engine).get_table_names())
+    adopted = "users" in tables and "alembic_version" not in tables
+    if adopted:
+        stamp(directory=MIGRATIONS_DIR, revision=INITIAL_REVISION)
+    upgrade(directory=MIGRATIONS_DIR)
+    return ("Existing database adopted; " if adopted else "") + "schema is up to date."
+
+
 def register_cli(app):
     @app.cli.command("create-db")
     def create_db():
-        """Create all tables (dev convenience; use Alembic migrations in production)."""
-        db.create_all()
-        print("Tables created.")
+        """Create the schema, or bring it up to date, by applying the migrations."""
+        print(upgrade_database())
 
     @app.cli.command("seed-db")
     def seed_db():
