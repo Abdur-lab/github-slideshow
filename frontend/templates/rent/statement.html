@@ -9,10 +9,10 @@
   <p><strong>{{ lease.tenant.user.full_name }}</strong> — {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
   <p class="text-muted">{{ _('Lease: {start} to {end}', start=lease.start_date|ltr, end=lease.end_date|ltr) }}</p>
   {% if lease.pro_rata %}
-  <p class="text-muted">{{ _('Pro rata: first month prorated to {amount} (full rate {full}).', amount="%.2f"|format(lease.first_period_amount()), full="%.2f"|format(lease.monthly_rent)) }}</p>
+  <p class="text-muted">{{ _('Pro rata: first month prorated to {amount} (full rate {full}).', amount=lease.first_period_amount()|money(lease.currency), full=lease.monthly_rent|money(lease.currency)) }}</p>
   {% endif %}
   {% if lease.current_monthly_rent != lease.monthly_rent %}
-  <p class="text-muted">{{ _('Current monthly rent: {current} (original {original}).', current="%.2f"|format(lease.current_monthly_rent), original="%.2f"|format(lease.monthly_rent)) }}</p>
+  <p class="text-muted">{{ _('Current monthly rent: {current} (original {original}).', current=lease.current_monthly_rent|money(lease.currency), original=lease.monthly_rent|money(lease.currency)) }}</p>
   {% endif %}
 
   <form method="get" class="mt-1">
@@ -39,7 +39,7 @@
     {% for p in payments %}
       <tr>
         <td>{{ p.paid_at.date() }}</td>
-        <td>{{ "%.2f"|format(p.amount) }}</td>
+        <td>{{ p.amount|money(lease.currency) }}</td>
         <td>{{ p.method|label }}</td>
         <td>{{ p.receipt_number }}</td>
         <td><a class="btn btn-sm btn-secondary" href="{{ url_for('rent.payment_receipt', payment_id=p.id) }}" target="_blank">{{ _('Receipt') }}</a></td>
@@ -53,17 +53,17 @@
 
   {% if period_totals %}
   <div class="grid grid-4 mt-1">
-    <div class="stat-tile"><div class="label">{{ _('Opening Balance') }}</div><div class="value">{{ "%.2f"|format(period_totals.opening_balance) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Rent + Charges') }}</div><div class="value">{{ "%.2f"|format(period_totals.rent_in_period + period_totals.charges_in_period) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Paid This Period') }}</div><div class="value">{{ "%.2f"|format(period_totals.payments_in_period) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Closing Balance') }}</div><div class="value">{{ "%.2f"|format(period_totals.closing_balance) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Opening Balance') }}</div><div class="value">{{ period_totals.opening_balance|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Rent + Charges') }}</div><div class="value">{{ (period_totals.rent_in_period + period_totals.charges_in_period)|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Paid This Period') }}</div><div class="value">{{ period_totals.payments_in_period|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Closing Balance') }}</div><div class="value">{{ period_totals.closing_balance|money(lease.currency) }}</div></div>
   </div>
   {% else %}
   <div class="grid grid-4 mt-1">
-    <div class="stat-tile"><div class="label">{{ _('Rent Due') }}</div><div class="value">{{ "%.2f"|format(lease.total_due_to_date()) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Charges') }}</div><div class="value">{{ "%.2f"|format(lease.total_charges) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Total Paid') }}</div><div class="value">{{ "%.2f"|format(lease.total_paid) }}</div></div>
-    <div class="stat-tile"><div class="label">{{ _('Balance') }}</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Rent Due') }}</div><div class="value">{{ lease.total_due_to_date()|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Charges') }}</div><div class="value">{{ lease.total_charges|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Total Paid') }}</div><div class="value">{{ lease.total_paid|money(lease.currency) }}</div></div>
+    <div class="stat-tile"><div class="label">{{ _('Balance') }}</div><div class="value">{{ lease.balance|money(lease.currency) }}</div></div>
   </div>
   {% endif %}
 </div>
@@ -75,7 +75,7 @@
     <thead><tr><th>{{ _('Date') }}</th><th>{{ _('Type') }}</th><th>{{ _('Description') }}</th><th>{{ _('Amount') }}</th></tr></thead>
     <tbody>
     {% for c in charges %}
-      <tr><td>{{ c.charged_at }}</td><td>{{ c.charge_type|label }}</td><td>{{ c.description }}</td><td>{{ "%.2f"|format(c.amount) }}</td></tr>
+      <tr><td>{{ c.charged_at }}</td><td>{{ c.charge_type|label }}</td><td>{{ c.description }}</td><td>{{ c.amount|money(lease.currency) }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -110,7 +110,7 @@
 <div class="card mt-1">
   <h3>{{ _('Electricity Meter') }}</h3>
   <p class="text-muted">
-    {{ _('Rate: {rate} per unit of consumption.', rate="%.2f"|format(lease.unit.property.electricity_rate)) }}
+    {{ _('Rate: {rate} per unit of consumption.', rate=lease.unit.property.electricity_rate|money(lease.currency)) }}
     {% if lease.unit.latest_meter_reading %}
       {{ _('Last reading: {value} on {date}.', value=lease.unit.latest_meter_reading.reading_value, date=lease.unit.latest_meter_reading.reading_date|ltr) }}
     {% else %}
@@ -126,7 +126,7 @@
         <td>{{ r.reading_date }}</td>
         <td>{{ r.reading_value }}</td>
         <td>{{ r.consumption if r.consumption is not none else "-" }}</td>
-        <td>{{ "%.2f"|format(r.rate_applied) if r.rate_applied is not none else "-" }}</td>
+        <td>{{ r.rate_applied|money(lease.currency) if r.rate_applied is not none else "-" }}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -155,7 +155,7 @@
 
 <div class="card mt-1">
   <h3>{{ _('Rent Revisions') }}</h3>
-  <p class="text-muted">{{ _('Base rent: {base}. Current rent: {current}.', base="%.2f"|format(lease.monthly_rent), current="%.2f"|format(lease.current_monthly_rent)) }}</p>
+  <p class="text-muted">{{ _('Base rent: {base}. Current rent: {current}.', base=lease.monthly_rent|money(lease.currency), current=lease.current_monthly_rent|money(lease.currency)) }}</p>
   {% if rent_revisions %}
   <table>
     <thead><tr><th>{{ _('Effective Date') }}</th><th>{{ _('Monthly Rent') }}</th><th>{{ _('Reason') }}</th></tr></thead>
@@ -163,7 +163,7 @@
     {% for r in rent_revisions %}
       <tr>
         <td>{{ r.effective_date }}</td>
-        <td>{{ "%.2f"|format(r.monthly_rent) }}</td>
+        <td>{{ r.monthly_rent|money(lease.currency) }}</td>
         <td>{{ r.reason or "-" }}</td>
       </tr>
     {% endfor %}
@@ -205,7 +205,7 @@
     {% for inv in invoices %}
       <tr>
         <td>{{ inv.period_due_date }}</td>
-        <td>{{ "%.2f"|format(inv.amount) }}</td>
+        <td>{{ inv.amount|money(lease.currency) }}</td>
         <td>{{ inv.generated_at.date() }}</td>
       </tr>
     {% endfor %}

@@ -16,7 +16,7 @@
     {% for p in payments %}
       <tr>
         <td>{{ p.paid_at.date() }}</td>
-        <td>{{ "%.2f"|format(p.amount) }}</td>
+        <td>{{ p.amount|money(p.currency) }}</td>
         <td>{{ p.method|label }}</td>
         <td>{{ p.receipt_number }}</td>
         <td><a class="btn btn-sm btn-secondary" href="{{ url_for('rent.payment_receipt', payment_id=p.id) }}" target="_blank">{{ _('Receipt') }}</a></td>

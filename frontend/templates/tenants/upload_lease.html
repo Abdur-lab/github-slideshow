@@ -10,7 +10,7 @@
       <select id="unit_id" name="unit_id" required>
         <option value="">{{ _('Select a vacant unit…') }}</option>
         {% for u in vacant_units %}
-          <option value="{{ u.id }}" {% if preselect_unit_id == u.id %}selected{% endif %}>{{ u.unit_code }} — {{ u.property.name }} ({{ _('{amount}/mo', amount="%.2f"|format(u.monthly_rent)) }})</option>
+          <option value="{{ u.id }}" {% if preselect_unit_id == u.id %}selected{% endif %}>{{ u.unit_code }} — {{ u.property.name }} ({{ _('{amount}/mo', amount=u.monthly_rent|money(u.currency)) }})</option>
         {% endfor %}
       </select>
     </div>

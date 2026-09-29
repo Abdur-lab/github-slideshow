@@ -11,12 +11,12 @@
         <option value="">{{ _('Select a tenant…') }}</option>
         {% for l in active_leases %}
           <option value="{{ l.id }}" {% if lease and lease.id == l.id %}selected{% endif %}>
-            {{ l.tenant.user.full_name }} — {{ l.unit.unit_code }} ({{ _('balance {amount}', amount="%.2f"|format(l.balance)) }})
+            {{ l.tenant.user.full_name }} — {{ l.unit.unit_code }} ({{ _('balance {amount}', amount=l.balance|money(l.currency)) }})
           </option>
         {% endfor %}
       </select>
     </div>
-    {% if lease %}<p class="text-muted">{{ _('Current balance:') }} <strong>{{ "%.2f"|format(lease.balance) }}</strong></p>{% endif %}
+    {% if lease %}<p class="text-muted">{{ _('Current balance:') }} <strong>{{ lease.balance|money(lease.currency) }}</strong></p>{% endif %}
     <div class="grid grid-2">
       <div class="field">
         <label for="amount">{{ _('Amount') }}</label>

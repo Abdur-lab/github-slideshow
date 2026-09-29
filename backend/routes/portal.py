@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from backend.i18n import translate as _
+from backend.i18n import Money, translate as _
 from backend.extensions import db
 from backend.models import ROLE_TENANT, Lease, MaintenanceRequest, RentPayment
 from backend.security import audit_log, current_user, role_required
@@ -62,7 +62,7 @@ def pay_confirm(lease_id):
         return redirect(url_for("portal.index"))
     payment = record_idempotent_payment(lease, amount, ref, recorded_by=current_user().id, method="ONLINE")
     audit_log("rent_paid_online", "RentPayment", payment.id, new_value={"amount": amount, "lease_id": lease.id})
-    amount = f"{payment.amount:.2f}"
+    amount = Money(payment.amount, lease.currency)
     send_email(
         tenant.user, "Payment received", "We received your online payment of {amount} ({receipt}).",
         amount=amount, receipt=payment.receipt_number,

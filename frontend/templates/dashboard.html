@@ -7,8 +7,8 @@
 <div class="grid grid-4 mt-1">
   <div class="stat-tile"><div class="label">{{ _('Total Units') }}</div><div class="value">{{ summary.total_units }}</div></div>
   <div class="stat-tile"><div class="label">{{ _('Occupancy Rate') }}</div><div class="value">{{ summary.occupancy_rate }}%</div></div>
-  <div class="stat-tile"><div class="label">{{ _('Rent Collected') }}</div><div class="value">{{ "%.2f"|format(summary.rent_collected) }}</div></div>
-  <div class="stat-tile"><div class="label">{{ _('Outstanding Balance') }}</div><div class="value">{{ "%.2f"|format(summary.rent_outstanding) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Rent Collected') }}</div><div class="value">{{ summary.rent_collected|money(summary.currency) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Outstanding Balance') }}</div><div class="value">{{ summary.rent_outstanding|money(summary.currency) }}</div></div>
 </div>
 
 <div class="grid grid-2 mt-1">

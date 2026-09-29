@@ -24,7 +24,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from backend.i18n import current_language, label, render_message, text_direction
+from backend.i18n import current_language, label, money, render_message, text_direction
 from backend.services.reports import REPORT_METRICS
 
 FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
@@ -100,7 +100,7 @@ class _Writer:
         return Paragraph("<br/>".join(escape(line) for line in visual), st)
 
     def cell(self, value) -> str:
-        text = "" if value is None else str(value)
+        text = ISOLATES.sub("", "" if value is None else str(value))
         # A date, code, amount or Latin name is already in display order.
         return self._visual(text) if self.rtl and ARABIC_LETTER.search(text) else text
 
@@ -141,6 +141,7 @@ def render_rent_statement_pdf(
 ) -> bytes:
     w = _Writer()
     t = w.t
+    cur = lease.currency
     elements = [
         w.para(t("RentalPro — Rent Statement"), "Title"),
         w.para(t("Tenant: {name}", name=lease.tenant.user.full_name)),
@@ -154,13 +155,13 @@ def render_rent_statement_pdf(
     elements.append(Spacer(1, 0.3 * inch))
 
     if period_totals:
-        elements.append(w.para(t("Opening balance: {amount}", amount=f"{period_totals['opening_balance']:.2f}")))
+        elements.append(w.para(t("Opening balance: {amount}", amount=money(period_totals['opening_balance'], cur))))
 
     rows = [[t("Date"), t("Type"), t("Description"), t("Amount"), t("Receipt #")]]
     for p in payments:
-        rows.append([str(p.paid_at.date()), t("Payment"), p.notes or t("Rent payment"), f"-{p.amount:.2f}", p.receipt_number])
+        rows.append([str(p.paid_at.date()), t("Payment"), p.notes or t("Rent payment"), money(-p.amount, cur), p.receipt_number])
     for c in charges or []:
-        rows.append([str(c.charged_at), label(c.charge_type), c.description, f"{c.amount:.2f}", "-"])
+        rows.append([str(c.charged_at), label(c.charge_type), c.description, money(c.amount, cur), "-"])
     elements.append(
         w.table(
             rows,
@@ -176,28 +177,28 @@ def render_rent_statement_pdf(
     elements.append(Spacer(1, 0.3 * inch))
 
     if period_totals:
-        elements.append(w.para(t("Rent charged this period: {amount}", amount=f"{period_totals['rent_in_period']:.2f}")))
+        elements.append(w.para(t("Rent charged this period: {amount}", amount=money(period_totals['rent_in_period'], cur))))
         if period_totals["charges_in_period"]:
             elements.append(
-                w.para(t("Operational/sundry charges this period: {amount}", amount=f"{period_totals['charges_in_period']:.2f}"))
+                w.para(t("Operational/sundry charges this period: {amount}", amount=money(period_totals['charges_in_period'], cur)))
             )
-        elements.append(w.para(t("Paid this period: {amount}", amount=f"{period_totals['payments_in_period']:.2f}")))
-        elements.append(w.para(t("Closing balance: {amount}", amount=f"{period_totals['closing_balance']:.2f}"), "Heading3"))
+        elements.append(w.para(t("Paid this period: {amount}", amount=money(period_totals['payments_in_period'], cur))))
+        elements.append(w.para(t("Closing balance: {amount}", amount=money(period_totals['closing_balance'], cur)), "Heading3"))
     else:
-        elements.append(w.para(t("Rent charged to date: {amount}", amount=f"{lease.total_due_to_date():.2f}")))
+        elements.append(w.para(t("Rent charged to date: {amount}", amount=money(lease.total_due_to_date(), cur))))
         if lease.current_monthly_rent != lease.monthly_rent:
             elements.append(
                 w.para(
                     t(
                         "Current monthly rent: {current} (original {original}).",
-                        current=f"{lease.current_monthly_rent:.2f}", original=f"{lease.monthly_rent:.2f}",
+                        current=money(lease.current_monthly_rent, cur), original=money(lease.monthly_rent, cur),
                     )
                 )
             )
         if charges:
-            elements.append(w.para(t("Operational/sundry charges: {amount}", amount=f"{lease.total_charges:.2f}")))
-        elements.append(w.para(t("Total paid: {amount}", amount=f"{lease.total_paid:.2f}")))
-        elements.append(w.para(t("Outstanding balance: {amount}", amount=f"{lease.balance:.2f}"), "Heading3"))
+            elements.append(w.para(t("Operational/sundry charges: {amount}", amount=money(lease.total_charges, cur))))
+        elements.append(w.para(t("Total paid: {amount}", amount=money(lease.total_paid, cur))))
+        elements.append(w.para(t("Outstanding balance: {amount}", amount=money(lease.balance, cur)), "Heading3"))
 
     return _build(elements)
 
@@ -205,6 +206,7 @@ def render_rent_statement_pdf(
 def render_payment_receipt_pdf(payment, lease, balance_after: float, generated_by: str = None) -> bytes:
     w = _Writer()
     t = w.t
+    cur = lease.currency
     elements = [
         w.para(t("RentalPro — Payment Receipt"), "Title"),
         w.para(t("Receipt #: {receipt}", receipt=payment.receipt_number)),
@@ -215,7 +217,7 @@ def render_payment_receipt_pdf(payment, lease, balance_after: float, generated_b
         [t("Tenant"), lease.tenant.user.full_name],
         [t("Unit"), f"{lease.unit.unit_code} ({lease.unit.property.name})"],
         [t("Date Paid"), str(payment.paid_at.date())],
-        [t("Amount Paid"), f"{payment.amount:.2f}"],
+        [t("Amount Paid"), money(payment.amount, cur)],
         [t("Method"), label(payment.method)],
         [t("Notes"), payment.notes or "-"],
     ]
@@ -233,7 +235,7 @@ def render_payment_receipt_pdf(payment, lease, balance_after: float, generated_b
         )
     )
     elements.append(Spacer(1, 0.3 * inch))
-    elements.append(w.para(t("Balance after this payment: {amount}", amount=f"{balance_after:.2f}"), "Heading3"))
+    elements.append(w.para(t("Balance after this payment: {amount}", amount=money(balance_after, cur)), "Heading3"))
     if generated_by:
         elements.append(Spacer(1, 0.2 * inch))
         elements.append(w.para(t("Recorded by {name}", name=generated_by)))
@@ -241,10 +243,14 @@ def render_payment_receipt_pdf(payment, lease, balance_after: float, generated_b
     return _build(elements)
 
 
-def _metric_value(key, value) -> str:
+MONEY_METRICS = {"rent_collected", "rent_outstanding", "maintenance_cost", "general_expenses", "total_expenses",
+                 "net_income_estimate"}
+
+
+def _metric_value(key, value, currency) -> str:
     if key == "occupancy_rate":
         return f"{value}%"
-    return f"{value:.2f}" if isinstance(value, float) else str(value)
+    return money(value, currency) if key in MONEY_METRICS else str(value)
 
 
 def render_property_report_pdf(property_obj, summary: dict) -> bytes:
@@ -257,7 +263,7 @@ def render_property_report_pdf(property_obj, summary: dict) -> bytes:
         heading = t("Property: {name}", name=f"{property_obj.name} ({property_obj.property_code})")
     elements = [w.para(t("RentalPro — Property Performance Report"), "Title"), w.para(heading), Spacer(1, 0.3 * inch)]
     rows = [[t("Metric"), t("Value")]] + [
-        [t(name), _metric_value(key, summary[key])] for key, name in REPORT_METRICS.items() if key in summary
+        [t(name), _metric_value(key, summary[key], summary.get("currency"))] for key, name in REPORT_METRICS.items() if key in summary
     ]
     elements.append(
         w.table(

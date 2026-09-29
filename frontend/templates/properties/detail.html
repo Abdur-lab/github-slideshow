@@ -56,7 +56,7 @@
       <tr>
         <td>{{ unit.unit_code }} (#{{ unit.unit_number }})</td>
         <td>{{ unit.type|label }}</td>
-        <td>{{ property.currency }} {{ "%.2f"|format(unit.monthly_rent) }}</td>
+        <td>{{ unit.monthly_rent|money(property.currency) }}</td>
         <td>{{ status_badge(unit.status) }}</td>
         <td>
           <a class="btn btn-sm btn-secondary" href="{{ url_for('properties.edit_unit', property_id=property.id, unit_id=unit.id) }}">{{ _('Edit') }}</a>
@@ -89,7 +89,7 @@
         <td>{{ e.incurred_at }}</td>
         <td>{{ e.category|label }}</td>
         <td>{{ e.description }}</td>
-        <td>{{ property.currency }} {{ "%.2f"|format(e.amount) }}</td>
+        <td>{{ e.amount|money(property.currency) }}</td>
       </tr>
     {% endfor %}
     </tbody>

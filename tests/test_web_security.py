@@ -80,3 +80,23 @@ def test_destructive_actions_still_ask_for_confirmation(client, owner, property_
     page = client.get(f"/properties/{property_.id}").get_data(as_text=True)
     assert 'data-confirm="Archive this property?"' in page
     assert "js/app.js" in page
+
+
+def test_rate_limit_page_is_translated():
+    from backend.extensions import db, limiter
+
+    app = create_app(type("RateLimited", (TestConfig,), {"RATELIMIT_ENABLED": True}))
+    limiter.enabled = True
+    with app.app_context():
+        db.create_all()
+    client = app.test_client()
+    client.get("/lang/ar")
+    try:
+        for _ in range(11):
+            resp = client.post("/login", data={"email": "nobody@test.com", "password": "x"})
+    finally:
+        limiter.reset()
+    assert resp.status_code == 429
+    page = resp.get_data(as_text=True)
+    assert "محاولات كثيرة جدًا" in page and 'dir="rtl"' in page
+    assert "Too Many Requests" not in page

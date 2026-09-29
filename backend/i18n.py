@@ -13,6 +13,7 @@ the same in every language. tests/test_i18n.py checks this.
 """
 from contextlib import contextmanager
 from contextvars import ContextVar
+from typing import NamedTuple
 
 from flask import has_request_context, session
 
@@ -820,6 +821,11 @@ ARABIC = {
     "Submitted": "مُقدَّم",
     "Acknowledged": "تم الاستلام",
     "Completed": "مكتمل",
+    # Rate limit page
+    "Too many attempts": "محاولات كثيرة جدًا",
+    "429 — Too many attempts": "429 — محاولات كثيرة جدًا",
+    "You have tried this too many times in a short time. Please wait a minute, then try again.":
+        "لقد حاولت عدة مرات في وقت قصير. يُرجى الانتظار دقيقة ثم المحاولة مرة أخرى.",
 }
 
 TRANSLATIONS = {"sn": SHONA, "ar": ARABIC}
@@ -838,6 +844,16 @@ def ltr(value) -> str:
 # Set by use_language() to render text for someone other than the current
 # visitor, e.g. an email to a tenant sent by a nightly job.
 _language_override: ContextVar[str | None] = ContextVar("language_override", default=None)
+
+
+def money(value, currency=None) -> str:
+    """An amount the same way on every screen: "USD 1,250.00", or "1,250.00"
+    when there is no single currency (e.g. a portfolio mixing currencies).
+    Kept in left-to-right order on Arabic pages."""
+    if value is None:
+        return ""
+    text = f"{value:,.2f}"
+    return ltr(f"{currency} {text}" if currency else text)
 
 
 def current_language() -> str:
@@ -866,10 +882,22 @@ class Phrase(str):
     """An English phrase passed as a message value; it is translated along with the message."""
 
 
+class Money(NamedTuple):
+    """An amount passed as a message value; formatted by money() in the message's language."""
+
+    amount: float
+    currency: str | None = None
+
+
 def render_message(text: str, **values) -> str:
     """Translate a message whose values may include Code and Phrase items."""
     values = {
-        key: label(value) if isinstance(value, Code) else translate(value) if isinstance(value, Phrase) else value
+        key: (
+            label(value) if isinstance(value, Code)
+            else translate(value) if isinstance(value, Phrase)
+            else money(*value) if isinstance(value, Money)
+            else value
+        )
         for key, value in values.items()
     }
     return translate(text, **values)

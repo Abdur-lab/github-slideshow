@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 from sqlalchemy import and_, or_
 
-from backend.i18n import Code, label, ltr, translate as _
+from backend.i18n import Code, Money, label, ltr, money, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -83,7 +83,8 @@ def record():
             lease.tenant.user,
             "Rent payment received",
             "We received your payment of {amount} ({receipt}). Remaining balance: {balance}.",
-            amount=f"{payment.amount:.2f}", receipt=payment.receipt_number, balance=f"{lease.balance:.2f}",
+            amount=Money(payment.amount, lease.currency), receipt=payment.receipt_number,
+            balance=Money(lease.balance, lease.currency),
         )
         flash(_("Payment recorded. Receipt {receipt}.", receipt=payment.receipt_number), "success")
         return redirect(url_for("rent.index"))
@@ -286,10 +287,10 @@ def add_charge(lease_id):
         lease.tenant.user,
         "A new charge was added to your account",
         "A {type} charge of {amount} ({description}) was added to your unit {unit}. Updated balance: {balance}.",
-        type=Code(charge_type), amount=f"{charge.amount:.2f}", description=description,
-        unit=lease.unit.unit_code, balance=f"{lease.balance:.2f}",
+        type=Code(charge_type), amount=Money(charge.amount, lease.currency), description=description,
+        unit=lease.unit.unit_code, balance=Money(lease.balance, lease.currency),
     )
-    flash(_("{type} charge of {amount} added.", type=label(charge_type), amount=f"{charge.amount:.2f}"), "success")
+    flash(_("{type} charge of {amount} added.", type=label(charge_type), amount=money(charge.amount, lease.currency)), "success")
     return redirect(url_for("rent.statement", lease_id=lease.id))
 
 
@@ -367,10 +368,10 @@ def add_meter_reading(lease_id):
             "A new electricity charge was added to your account",
             "An electricity charge of {amount} ({consumption} units) was added to your unit {unit}. "
             "Updated balance: {balance}.",
-            amount=f"{amount:.2f}", consumption=consumption, unit=unit.unit_code,
-            balance=f"{unit.active_lease.balance:.2f}",
+            amount=Money(amount, unit.currency), consumption=consumption, unit=unit.unit_code,
+            balance=Money(unit.active_lease.balance, unit.currency),
         )
-        flash(_("Reading recorded. Electricity charge of {amount} added.", amount=f"{amount:.2f}"), "success")
+        flash(_("Reading recorded. Electricity charge of {amount} added.", amount=money(amount, unit.currency)), "success")
     else:
         db.session.commit()
         audit_log("meter_reading_added", "MeterReading", reading.id, new_value={"reading_value": reading_value})
@@ -421,12 +422,12 @@ def revise_rent(lease_id):
         lease.tenant.user,
         "Your rent is changing",
         "Your monthly rent for unit {unit} will change to {amount}, effective {date}.",
-        unit=lease.unit.unit_code, amount=f"{revision.monthly_rent:.2f}", date=revision.effective_date,
+        unit=lease.unit.unit_code, amount=Money(revision.monthly_rent, lease.currency), date=revision.effective_date,
     )
     flash(
         _(
             "Rent revision recorded: {amount} effective {date}.",
-            amount=f"{revision.monthly_rent:.2f}",
+            amount=money(revision.monthly_rent, lease.currency),
             date=ltr(revision.effective_date),
         ),
         "success",

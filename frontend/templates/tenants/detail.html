@@ -39,8 +39,8 @@
     {% if lease %}
       <p><strong>{{ _('Unit:') }}</strong> {{ lease.unit.unit_code }} ({{ lease.unit.property.name }})</p>
       <p><strong>{{ _('Term:') }}</strong> {{ _('{start} to {end}', start=lease.start_date|ltr, end=lease.end_date|ltr) }}</p>
-      <p><strong>{{ _('Monthly rent:') }}</strong> {{ "%.2f"|format(lease.current_monthly_rent) }}{% if lease.current_monthly_rent != lease.monthly_rent %} <span class="text-muted">{{ _('(originally {amount})', amount="%.2f"|format(lease.monthly_rent)) }}</span>{% endif %}{% if lease.pro_rata %} <span class="text-muted">{{ _('(first month prorated)') }}</span>{% endif %}</p>
-      <p><strong>{{ _('Balance:') }}</strong> {{ "%.2f"|format(lease.balance) }}</p>
+      <p><strong>{{ _('Monthly rent:') }}</strong> {{ lease.current_monthly_rent|money(lease.currency) }}{% if lease.current_monthly_rent != lease.monthly_rent %} <span class="text-muted">{{ _('(originally {amount})', amount=lease.monthly_rent|money(lease.currency)) }}</span>{% endif %}{% if lease.pro_rata %} <span class="text-muted">{{ _('(first month prorated)') }}</span>{% endif %}</p>
+      <p><strong>{{ _('Balance:') }}</strong> {{ lease.balance|money(lease.currency) }}</p>
       <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">{{ _('Record Payment') }}</a>
       <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">{{ _('Rent History') }}</a>
       <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.statement', lease_id=lease.id) }}">{{ _('Generate Statement') }}</a>

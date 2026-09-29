@@ -7,8 +7,8 @@
 {% if lease %}
 <div class="grid grid-3 mt-1">
   <div class="stat-tile"><div class="label">{{ _('Unit') }}</div><div class="value-sm value">{{ _('{property} · Unit {unit}', property=lease.unit.property.name, unit=lease.unit.unit_number) }}</div></div>
-  <div class="stat-tile"><div class="label">{{ _('Monthly Rent') }}</div><div class="value">{{ "%.2f"|format(lease.current_monthly_rent) }}</div></div>
-  <div class="stat-tile"><div class="label">{{ _('Balance Due') }}</div><div class="value">{{ "%.2f"|format(lease.balance) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Monthly Rent') }}</div><div class="value">{{ lease.current_monthly_rent|money(lease.currency) }}</div></div>
+  <div class="stat-tile"><div class="label">{{ _('Balance Due') }}</div><div class="value">{{ lease.balance|money(lease.currency) }}</div></div>
 </div>
 {% if lease.balance > 0 %}
 <div class="card mt-1"><a class="btn" href="{{ url_for('portal.pay') }}">{{ _('Pay Rent Now') }}</a></div>
@@ -29,7 +29,7 @@
       <thead><tr><th>{{ _('Date') }}</th><th>{{ _('Amount') }}</th><th>{{ _('Receipt #') }}</th></tr></thead>
       <tbody>
       {% for p in recent_payments %}
-        <tr><td>{{ p.paid_at.date() }}</td><td>{{ "%.2f"|format(p.amount) }}</td><td>{{ p.receipt_number }}</td></tr>
+        <tr><td>{{ p.paid_at.date() }}</td><td>{{ p.amount|money(lease.currency) }}</td><td>{{ p.receipt_number }}</td></tr>
       {% endfor %}
       </tbody>
     </table>

@@ -54,6 +54,7 @@ def property_performance(property_obj: Property, start: date = None, end: date =
     return {
         "property_name": property_obj.name,
         "property_code": property_obj.property_code,
+        "currency": property_obj.currency,
         "total_units": total_units,
         "occupied_units": occupied,
         "occupancy_rate": round((occupied / total_units) * 100, 1) if total_units else 0.0,
@@ -72,6 +73,7 @@ def portfolio_performance(properties) -> dict:
     if not summaries:
         return {
             "properties": [],
+            "currency": None,
             "total_units": 0,
             "occupied_units": 0,
             "occupancy_rate": 0.0,
@@ -86,8 +88,11 @@ def portfolio_performance(properties) -> dict:
     occupied_units = sum(s["occupied_units"] for s in summaries)
     rent_collected = round(sum(s["rent_collected"] for s in summaries), 2)
     total_expenses = round(sum(s["total_expenses"] for s in summaries), 2)
+    currencies = {s["currency"] for s in summaries}
     return {
         "properties": summaries,
+        # Totals get a currency only when every property uses the same one.
+        "currency": currencies.pop() if len(currencies) == 1 else None,
         "total_units": total_units,
         "occupied_units": occupied_units,
         "occupancy_rate": round((occupied_units / total_units) * 100, 1) if total_units else 0.0,

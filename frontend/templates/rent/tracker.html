@@ -11,8 +11,8 @@
       <tr>
         <td><a href="{{ url_for('tenants.detail', tenant_id=lease.tenant_id) }}">{{ lease.tenant.user.full_name }}</a></td>
         <td>{{ lease.unit.unit_code }}</td>
-        <td>{{ "%.2f"|format(lease.current_monthly_rent) }}</td>
-        <td>{% if lease.balance > 0 %}<span class="badge badge-red">{{ "%.2f"|format(lease.balance) }}</span>{% else %}<span class="badge badge-green">{{ _('Paid up') }}</span>{% endif %}</td>
+        <td>{{ lease.current_monthly_rent|money(lease.currency) }}</td>
+        <td>{% if lease.balance > 0 %}<span class="badge badge-red">{{ lease.balance|money(lease.currency) }}</span>{% else %}<span class="badge badge-green">{{ _('Paid up') }}</span>{% endif %}</td>
         <td>
           <a class="btn btn-sm" href="{{ url_for('rent.record', lease_id=lease.id) }}">{{ _('Record Payment') }}</a>
           <a class="btn btn-sm btn-secondary" href="{{ url_for('rent.history', lease_id=lease.id) }}">{{ _('History') }}</a>

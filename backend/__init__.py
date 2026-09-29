@@ -39,13 +39,14 @@ def create_app(config_class=Config):
     for bp in ALL_BLUEPRINTS:
         app.register_blueprint(bp)
 
-    from backend.i18n import LANGUAGES, current_language, label, ltr, text_direction, translate
+    from backend.i18n import LANGUAGES, current_language, label, ltr, money, text_direction, translate
     from backend.security import current_user, home_url, safe_next_url
 
     # A Jinja global (not just a context variable) so imported macro files can translate too.
     app.jinja_env.globals["_"] = translate
     app.jinja_env.filters["ltr"] = ltr
     app.jinja_env.filters["label"] = label
+    app.jinja_env.filters["money"] = money
 
     @app.context_processor
     def inject_globals():
@@ -76,6 +77,10 @@ def create_app(config_class=Config):
     @app.errorhandler(404)
     def not_found(_e):
         return render_template("errors/404.html"), 404
+
+    @app.errorhandler(429)
+    def too_many_requests(_e):
+        return render_template("errors/429.html"), 429
 
     @app.errorhandler(500)
     def server_error(_e):

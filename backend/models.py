@@ -164,6 +164,10 @@ class Unit(db.Model):
     maintenance_requests = db.relationship("MaintenanceRequest", backref="unit", lazy="dynamic")
     meter_readings = db.relationship("MeterReading", backref="unit", lazy="dynamic")
 
+    @property
+    def currency(self) -> str:
+        return self.property.currency
+
     @staticmethod
     def generate_unit_code(property_code: str, unit_number: str) -> str:
         return f"{property_code}-U{uuid.uuid4().hex[:4].upper()}"
@@ -265,6 +269,10 @@ class Lease(db.Model):
     charges = db.relationship("LeaseCharge", backref="lease", lazy="dynamic")
     rent_revisions = db.relationship("RentRevision", backref="lease", lazy="dynamic")
     invoices = db.relationship("RentInvoice", backref="lease", lazy="dynamic")
+
+    @property
+    def currency(self) -> str:
+        return self.unit.currency
 
     def _clip_day(self, year: int, month: int) -> int:
         last_day = calendar.monthrange(year, month)[1]
@@ -446,6 +454,10 @@ class RentPayment(db.Model):
     notes = db.Column(db.String(300), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
+    @property
+    def currency(self) -> str:
+        return self.lease.currency
+
     @staticmethod
     def generate_receipt_number() -> str:
         return f"RCP-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
@@ -583,6 +595,10 @@ class MaintenanceRequest(db.Model):
     costs = db.relationship("MaintenanceCost", backref="request", cascade="all, delete-orphan", lazy="dynamic")
     notes_log = db.relationship("MaintenanceNote", backref="request", cascade="all, delete-orphan", lazy="dynamic")
     assignee = db.relationship("User", foreign_keys=[assigned_to])
+
+    @property
+    def currency(self) -> str:
+        return self.unit.currency
 
     @staticmethod
     def generate_ticket_number() -> str:

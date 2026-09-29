@@ -7,7 +7,7 @@ Deliverable 3 describes the test suite invoking these jobs."""
 from datetime import date, datetime, timedelta
 
 from backend.extensions import db
-from backend.i18n import Phrase
+from backend.i18n import Money, Phrase
 from backend.models import Lease, MaintenanceRequest, RentInvoice, ROLE_MANAGER, User
 from backend.security import audit_log
 from backend.services.notifications import send_email, send_sms
@@ -57,7 +57,7 @@ def job_rent_due_alerts() -> int:
             continue
         tenant_user = lease.tenant.user
         body = "Rent of {amount} for unit {unit} is due on {date}."
-        details = {"amount": f"{lease.balance:.2f}", "unit": lease.unit.unit_code, "date": next_due}
+        details = {"amount": Money(lease.balance, lease.currency), "unit": lease.unit.unit_code, "date": next_due}
         send_email(tenant_user, "Rent due soon", body, **details)
         send_sms(tenant_user, body, **details)
         audit_log("rent_due_alert", "Lease", lease.id, new_value={"days_out": days_out})
@@ -90,7 +90,8 @@ def job_auto_bill_rent() -> int:
                 "New rent invoice generated",
                 "A rent invoice of {amount} for unit {unit} has been generated for the billing period due {date}. "
                 "Current balance: {balance}.",
-                amount=f"{amount:.2f}", unit=lease.unit.unit_code, date=due, balance=f"{lease.balance:.2f}",
+                amount=Money(amount, lease.currency), unit=lease.unit.unit_code, date=due,
+                balance=Money(lease.balance, lease.currency),
             )
             audit_log("rent_auto_billed", "Lease", lease.id, new_value={"period_due_date": str(due), "amount": amount})
             sent += 1
@@ -121,7 +122,7 @@ def job_overdue_alerts() -> int:
             tier = Phrase("Final notice — escalation warning")
         tenant_user = lease.tenant.user
         body = "[{tier}] Rent of {amount} is {days} day(s) overdue."
-        details = {"tier": tier, "amount": f"{lease.balance:.2f}", "days": days_overdue}
+        details = {"tier": tier, "amount": Money(lease.balance, lease.currency), "days": days_overdue}
         send_email(tenant_user, "Overdue rent notice", body, **details)
         send_sms(tenant_user, body, **details)
         audit_log("overdue_notice", "Lease", lease.id, new_value={"days_overdue": days_overdue, "tier": tier})
@@ -133,9 +134,10 @@ def job_overdue_alerts() -> int:
     for owner_id, leases in owner_summaries.items():
         owner = db.session.get(User, owner_id)
         total = sum(lease.balance for lease in leases)
+        currencies = {lease.currency for lease in leases}
         send_email(
             owner, "Daily overdue rent summary", "{count} tenant(s) overdue, totalling {amount} outstanding.",
-            count=len(leases), amount=f"{total:.2f}",
+            count=len(leases), amount=Money(total, currencies.pop() if len(currencies) == 1 else None),
         )
         sent += 1
     return sent
