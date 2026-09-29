@@ -70,6 +70,8 @@ tests/
   test_translated_documents.py      emails, SMS, PDFs, Excel and CSV in the reader's language
   test_web_security.py              secret key, security headers, cookie flags, no inline code
   test_migrations.py                migrations match the models; old databases are adopted
+  test_storage.py                   uploads on local disk or in an S3-compatible bucket
+  test_money.py                     amounts shown with their currency everywhere
   test_unit_history_and_maintenance_summary.py  tenant history per unit (FR-015), maintenance summary per period (FR-036)
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
@@ -140,6 +142,23 @@ Any of `SENDGRID_API_KEY`, `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`, and
 `STRIPE_SECRET_KEY` can be left unset — email/SMS then log as `SENT`
 without calling an external API, and online payments use a simulated
 checkout, so the whole app is exercisable offline.
+
+### Uploaded files
+
+Lease PDFs, ID documents and photos are stored on local disk
+(`UPLOAD_FOLDER`) by default. Most hosting platforms wipe a server's disk
+on every redeploy, so production should use a bucket:
+
+```bash
+STORAGE_BACKEND=s3
+S3_BUCKET=rentalpro-uploads
+S3_REGION=af-south-1                  # or S3_ENDPOINT_URL for Cloudflare R2, MinIO, ...
+AWS_ACCESS_KEY_ID=...  AWS_SECRET_ACCESS_KEY=...
+```
+
+Routes and stored paths are identical for both backends
+(`backend/services/storage.py`). Files stay private: they are streamed
+through the app after its permission checks, never exposed by a public link.
 
 ### Database migrations
 

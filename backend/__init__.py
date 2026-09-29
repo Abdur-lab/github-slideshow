@@ -32,7 +32,11 @@ def create_app(config_class=Config):
     else:
         limiter.enabled = False
 
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    if app.config.get("STORAGE_BACKEND", "local") == "s3":
+        if not app.config.get("S3_BUCKET"):
+            raise RuntimeError("STORAGE_BACKEND=s3 needs S3_BUCKET (and AWS credentials) to be set.")
+    else:
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     from backend.routes import ALL_BLUEPRINTS
 

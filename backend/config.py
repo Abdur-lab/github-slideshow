@@ -20,6 +20,13 @@ class Config:
 
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 MB uploads
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", os.path.join(os.getcwd(), "uploads"))
+    # "local" keeps uploads in UPLOAD_FOLDER; "s3" keeps them in an S3-compatible
+    # bucket (set S3_ENDPOINT_URL for R2, MinIO, etc.). See services/storage.py.
+    STORAGE_BACKEND = os.environ.get("STORAGE_BACKEND", "local").lower()
+    S3_BUCKET = os.environ.get("S3_BUCKET")
+    S3_REGION = os.environ.get("S3_REGION")
+    S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")
+    S3_PREFIX = os.environ.get("S3_PREFIX", "")
 
     SCHEDULER_ENABLED = os.environ.get("SCHEDULER_ENABLED", "true").lower() == "true"
     RATELIMIT_ENABLED = os.environ.get("RATELIMIT_ENABLED", "true").lower() == "true"
