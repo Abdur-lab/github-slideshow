@@ -120,7 +120,7 @@
     {% set notes = req.notes_log.all() %}
     {% if notes %}
       {% for note in notes %}
-      <p><strong>{{ note.author.full_name }}</strong> <span class="text-muted">({{ note.created_at.strftime('%Y-%m-%d %H:%M') }})</span><br>{{ note.note }}</p>
+      <p><strong>{{ note.author.full_name }}</strong> <span class="text-muted">({{ note.created_at.strftime('%Y-%m-%d %H:%M')|ltr }})</span><br>{{ note.note }}</p>
       {% endfor %}
     {% else %}
       <p class="text-muted">No notes yet.</p>

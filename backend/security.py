@@ -82,8 +82,12 @@ def role_required(*roles):
 
 
 def safe_next_url(next_url: str, default: str) -> str:
-    """Blocks open-redirect (//evil.com or scheme-qualified) 'next' params."""
-    if not next_url:
+    """Blocks open-redirect 'next' params: only same-site paths like /rent are allowed.
+
+    Rejects scheme-qualified and protocol-relative URLs (//evil.com), and any
+    backslash, since browsers treat /\\evil.com as //evil.com.
+    """
+    if not next_url or not next_url.startswith("/") or "\\" in next_url:
         return default
     parsed = urlparse(next_url)
     if parsed.netloc or parsed.scheme:

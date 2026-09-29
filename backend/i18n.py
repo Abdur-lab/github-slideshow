@@ -245,6 +245,16 @@ ARABIC = {
 TRANSLATIONS = {"sn": SHONA, "ar": ARABIC}
 
 
+def ltr(value) -> str:
+    """Keep a left-to-right value (a date, code or email) in order inside other text.
+
+    On an Arabic page a date such as 2026-03-13 inside a sentence is otherwise
+    reordered by the browser to read 13-03-2026. The Unicode isolate
+    characters (U+2066 ... U+2069) are invisible and harmless in English.
+    """
+    return f"\u2066{value}\u2069"
+
+
 def current_language() -> str:
     lang = session.get("lang", DEFAULT_LANGUAGE)
     return lang if lang in LANGUAGES else DEFAULT_LANGUAGE

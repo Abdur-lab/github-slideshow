@@ -1,4 +1,7 @@
+import pytest
+
 from backend.i18n import ARABIC, SHONA, TRANSLATIONS
+from backend.security import safe_next_url
 from tests.conftest import login
 
 
@@ -146,3 +149,32 @@ def test_language_menu_shows_the_current_language_and_lists_every_option(client)
     options = re.search(r'<ul class="lang-options"[^>]*>(.*?)</ul>', html, re.S).group(1)
     assert re.findall(r'lang="(\w+)"', options) == ["en", "sn", "ar"]
     assert re.search(r'lang="ar" class="active" aria-current="true"', options)
+
+
+@pytest.mark.parametrize("target", ["//evil.com", "/\\evil.com", "https://evil.com", "evil.com", "javascript:alert(1)"])
+def test_language_switch_rejects_every_off_site_next(client, target):
+    # Browsers treat "/\\evil.com" as "//evil.com", so a backslash must be refused too.
+    resp = client.get("/lang/ar", query_string={"next": target})
+    assert resp.status_code == 302
+    assert "evil" not in resp.headers["Location"] and "javascript" not in resp.headers["Location"]
+
+
+def test_safe_next_url_allows_only_same_site_paths():
+    assert safe_next_url("/rent?x=1", "/d") == "/rent?x=1"
+    for bad in ("//evil.com", "/\\evil.com", "https://evil.com", "evil.com", "", None):
+        assert safe_next_url(bad, "/d") == "/d"
+
+
+def test_login_next_cannot_leave_the_site(client, owner):
+    resp = client.post("/login?next=/%5Cevil.com", data={"email": owner.email, "password": "password123"})
+    assert resp.status_code == 302
+    assert "evil.com" not in resp.headers["Location"]
+
+
+def test_dates_keep_their_order_on_arabic_pages(client, owner, active_lease):
+    login(client, owner.email)
+    client.get("/lang/ar")
+    page = client.get(f"/tenants/{active_lease.tenant_id}").get_data(as_text=True)
+    # Wrapped in invisible Unicode isolates so right-to-left text cannot reorder them.
+    assert f"\u2066{active_lease.start_date}\u2069" in page
+    assert f"\u2066{active_lease.end_date}\u2069" in page

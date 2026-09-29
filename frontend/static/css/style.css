@@ -2,8 +2,9 @@
   --bg: #f4f5f7;
   --surface: #ffffff;
   --text: #1f2430;
-  --text-muted: #6b7280;
+  --text-muted: #4b5563;  /* 6.9:1 on the page background (was #6b7280, 4.43:1) */
   --border: #e3e5ea;
+  --border-input: #8a94a6; /* form fields need a 3:1 boundary */
   --brand: #2563eb;
   --brand-dark: #1d4ed8;
   --success: #16a34a;
@@ -25,6 +26,8 @@ body {
 
 a { color: var(--brand); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .app-shell { min-height: 100vh; }
 .app-shell::before {
@@ -82,8 +85,11 @@ a:hover { text-decoration: underline; }
   font-size: 0.88rem;
   white-space: nowrap;
 }
-.topnav-links a:hover { background: rgba(255, 255, 255, 0.14); text-decoration: none; }
-.topnav-links a.active { background: rgba(255, 255, 255, 0.28); color: #fff; }
+/* Dark overlays keep white text above 4.5:1 on every part of the gradient
+   (a white overlay dropped the active item to 2.9:1). */
+.topnav-links a:hover { background: rgba(15, 23, 42, 0.18); text-decoration: none; }
+.topnav-links a.active { background: rgba(15, 23, 42, 0.3); color: #fff; font-weight: 600; box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.85); }
+.topnav-links a:focus-visible { outline-color: #fff; }
 .topnav .role-badge {
   flex-shrink: 0;
   display: inline-block;
@@ -103,7 +109,7 @@ a:hover { text-decoration: underline; }
   font-size: 0.88rem;
   color: #f8fafc;
 }
-.topnav-user .text-muted { color: rgba(255, 255, 255, 0.75); }
+.topnav-user .text-muted { color: rgba(255, 255, 255, 0.95); }
 
 .lang-menu { position: relative; }
 .lang-menu summary {
@@ -206,9 +212,10 @@ a:hover { text-decoration: underline; }
 .auth-card {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* Opaque enough that labels stay readable over any part of the photo. */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 2.5rem;
   border-radius: 16px;
   width: 380px;
@@ -263,7 +270,7 @@ a:hover { text-decoration: underline; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: start; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
 th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
-tr:hover td { background: #fafafa; }
+tr:hover td { background: rgba(37, 99, 235, 0.06); }
 
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
 .badge-green { background: #dcfce7; color: #166534; }
@@ -284,9 +291,11 @@ tr:hover td { background: #fafafa; }
   font-weight: 600;
 }
 .btn:hover { background: var(--brand-dark); text-decoration: none; }
-.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn[disabled], .btn.disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border-input); }
 .btn-secondary:hover { background: #f3f4f6; }
 .btn-danger { background: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: #b91c1c; border-color: #b91c1c; }
 .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }
 
 form .field { margin-bottom: 0.9rem; }
@@ -294,11 +303,17 @@ label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3
 input, select, textarea {
   width: 100%;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius);
+  background: var(--surface);
   font-size: 0.92rem;
   font-family: inherit;
 }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 0; }
+input:disabled, select:disabled, textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+/* Checkboxes and radios must not stretch to full width like text fields. */
+input[type="checkbox"], input[type="radio"] { width: auto; accent-color: var(--brand); }
 textarea { resize: vertical; min-height: 80px; }
 
 .flash { padding: 0.7rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.9rem; }
@@ -309,7 +324,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .text-muted { color: var(--text-muted); }
 .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem 1rem; }
 .mt-1 { margin-top: 1rem; }
 
 .map-container {
@@ -324,3 +339,21 @@ textarea { resize: vertical; min-height: 80px; }
 .map-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
 .map-popup h4 { margin: 0 0 0.2rem; }
 .map-popup a { font-size: 0.85rem; }
+
+/* Mixed-direction content. Amounts, dates, codes and English text typed by
+   users take their direction from their own content, so a minus sign or a
+   full stop is not moved to the wrong end on an Arabic (right-to-left) page. */
+td, dd, .stat-tile .value, input, textarea { unicode-bidi: plaintext; }
+[dir="rtl"] td, [dir="rtl"] dd, [dir="rtl"] .stat-tile .value { text-align: right; }
+/* Arabic letters join, so uppercase letter-spacing must be off. */
+[dir="rtl"] th, [dir="rtl"] .stat-tile .label { letter-spacing: 0; }
+
+/* Phones: wide tables scroll sideways instead of overflowing the page. */
+@media (max-width: 860px) {
+  .content { padding: 1rem; }
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
