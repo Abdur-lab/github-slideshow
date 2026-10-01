@@ -253,8 +253,8 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 244 tests (244 passed, 0 skipped on the latest run),
-0 failures, 83% statement coverage across `backend/` (`pytest --cov=backend`).
+**Current results:** 298 tests (298 passed, 0 skipped on the latest run),
+0 failures, 85% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.
