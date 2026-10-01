@@ -50,7 +50,7 @@ backend/
   models.py               13 SQLAlchemy models + business logic (balances, occupancy, numbering)
   security.py              auth, RBAC, IDOR guard, input validation, audit log
   web_security.py           secret-key check at start-up, security headers
-  scheduler_jobs.py         the 4 background jobs (UC-11, UC-14, UC-15, UC-23)
+  scheduler_jobs.py         the 5 background jobs (UC-11, UC-14, UC-15, UC-23, automated billing)
   seed.py                    Harare demo data (matches credentials below)
   i18n.py                     English/Shona/Arabic interface translation
   routes/                     auth, dashboard, properties, tenants, rent, portal, maintenance, reports, api
