@@ -2,7 +2,7 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from backend.i18n import label, translate as _
+from backend.i18n import label, money, translate as _
 from backend.extensions import db
 from backend.models import (
     MANAGEMENT_ROLES,
@@ -168,7 +168,7 @@ def add_expense(property_id):
     db.session.commit()
     audit_log("property_expense_added", "PropertyExpense", expense.id, new_value={"category": category, "amount": float(amount)})
     flash(
-        _("{category} expense of {amount} recorded.", category=label(category), amount=f"{expense.amount:.2f}"),
+        _("{category} expense of {amount} recorded.", category=label(category), amount=money(expense.amount, prop.currency)),
         "success",
     )
     return redirect(url_for("properties.detail", property_id=prop.id))

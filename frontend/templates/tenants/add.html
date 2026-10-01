@@ -2,7 +2,7 @@
 {% block title %}{{ _('Create Tenant Profile') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Create Tenant Profile') }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% if unit_id %}<input type="hidden" name="unit_id" value="{{ unit_id }}">{% endif %}

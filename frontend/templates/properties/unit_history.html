@@ -22,7 +22,7 @@
         <td>{{ lease.tenant.national_id }}</td>
         <td>{{ lease.start_date }}</td>
         <td>{{ lease.end_date }}</td>
-        <td>{{ property.currency }} {{ "%.2f"|format(lease.monthly_rent) }}</td>
+        <td>{{ lease.monthly_rent|money(property.currency) }}</td>
         <td>{{ status_badge(lease.status) }}</td>
       </tr>
     {% endfor %}

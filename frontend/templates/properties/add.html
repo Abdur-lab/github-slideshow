@@ -3,7 +3,7 @@
 {% block extra_head %}{% include "properties/_leaflet_head.html" %}{% endblock %}
 {% block content %}
 <h1>{{ _('Add New Property') }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
@@ -62,7 +62,7 @@
            data-lat-input="latitude" data-lng-input="longitude"
            data-default-lat="-17.8292" data-default-lng="31.0522" data-default-zoom="12"
            data-clear-button="clear-location"></div>
-      <p class="map-hint">{{ _('Click the map to drop a pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="btn btn-sm btn-secondary" style="margin-top:0.3rem">{{ _('Clear location') }}</button></p>
+      <p class="map-hint">{{ _('Click the map to drop a pin, or type coordinates directly.') }} <button type="button" id="clear-location" class="mt-xs btn btn-sm btn-secondary">{{ _('Clear location') }}</button></p>
     </div>
     <div class="field">
       <label for="photos">{{ _('Property photos (up to 10, JPG/PNG, max 5 MB each)') }}</label>

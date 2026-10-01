@@ -7,6 +7,7 @@ Deliverable 3 describes the test suite invoking these jobs."""
 from datetime import date, datetime, timedelta
 
 from backend.extensions import db
+from backend.i18n import Money, Phrase
 from backend.models import Lease, MaintenanceRequest, RentInvoice, ROLE_MANAGER, User
 from backend.security import audit_log
 from backend.services.notifications import send_email, send_sms
@@ -25,9 +26,18 @@ def job_lease_expiry_alerts() -> int:
         for lease in leases:
             tenant_user = lease.tenant.user
             owner = lease.unit.property.owner
-            body = f"Lease for unit {lease.unit.unit_code} at {lease.unit.property.name} expires on {lease.end_date} ({days} days remaining)."
-            send_email(tenant_user, "Your lease is expiring soon", body)
-            send_email(owner, f"Tenant lease expiring in {days} days", f"{tenant_user.full_name}: {body}")
+            details = {
+                "unit": lease.unit.unit_code, "property": lease.unit.property.name, "date": lease.end_date, "days": days,
+            }
+            body = "Lease for unit {unit} at {property} expires on {date} ({days} days remaining)."
+            send_email(tenant_user, "Your lease is expiring soon", body, **details)
+            send_email(
+                owner,
+                "Tenant lease expiring in {days} days",
+                "{name}: Lease for unit {unit} at {property} expires on {date} ({days} days remaining).",
+                name=tenant_user.full_name,
+                **details,
+            )
             audit_log("lease_expiry_alert", "Lease", lease.id, new_value={"days_remaining": days})
             sent += 1
     return sent
@@ -46,9 +56,10 @@ def job_rent_due_alerts() -> int:
         if days_out not in RENT_DUE_THRESHOLDS:
             continue
         tenant_user = lease.tenant.user
-        body = f"Rent of {lease.balance:.2f} for unit {lease.unit.unit_code} is due on {next_due}."
-        send_email(tenant_user, "Rent due soon", body)
-        send_sms(tenant_user, body)
+        body = "Rent of {amount} for unit {unit} is due on {date}."
+        details = {"amount": Money(lease.balance, lease.currency), "unit": lease.unit.unit_code, "date": next_due}
+        send_email(tenant_user, "Rent due soon", body, **details)
+        send_sms(tenant_user, body, **details)
         audit_log("rent_due_alert", "Lease", lease.id, new_value={"days_out": days_out})
         sent += 1
     return sent
@@ -74,11 +85,14 @@ def job_auto_bill_rent() -> int:
             invoice = RentInvoice(lease_id=lease.id, period_due_date=due, amount=amount)
             db.session.add(invoice)
             tenant_user = lease.tenant.user
-            body = (
-                f"A rent invoice of {amount:.2f} for unit {lease.unit.unit_code} has been generated for the "
-                f"billing period due {due}. Current balance: {lease.balance:.2f}."
+            send_email(
+                tenant_user,
+                "New rent invoice generated",
+                "A rent invoice of {amount} for unit {unit} has been generated for the billing period due {date}. "
+                "Current balance: {balance}.",
+                amount=Money(amount, lease.currency), unit=lease.unit.unit_code, date=due,
+                balance=Money(lease.balance, lease.currency),
             )
-            send_email(tenant_user, "New rent invoice generated", body)
             audit_log("rent_auto_billed", "Lease", lease.id, new_value={"period_due_date": str(due), "amount": amount})
             sent += 1
     db.session.commit()
@@ -101,15 +115,16 @@ def job_overdue_alerts() -> int:
         if days_overdue <= 0:
             continue
         if days_overdue <= 3:
-            tier = "Gentle reminder"
+            tier = Phrase("Gentle reminder")
         elif days_overdue <= 7:
-            tier = "Firm notice — late fee may apply"
+            tier = Phrase("Firm notice — late fee may apply")
         else:
-            tier = "Final notice — escalation warning"
+            tier = Phrase("Final notice — escalation warning")
         tenant_user = lease.tenant.user
-        body = f"[{tier}] Rent of {lease.balance:.2f} is {days_overdue} day(s) overdue."
-        send_email(tenant_user, "Overdue rent notice", body)
-        send_sms(tenant_user, body)
+        body = "[{tier}] Rent of {amount} is {days} day(s) overdue."
+        details = {"tier": tier, "amount": Money(lease.balance, lease.currency), "days": days_overdue}
+        send_email(tenant_user, "Overdue rent notice", body, **details)
+        send_sms(tenant_user, body, **details)
         audit_log("overdue_notice", "Lease", lease.id, new_value={"days_overdue": days_overdue, "tier": tier})
         sent += 1
 
@@ -119,8 +134,11 @@ def job_overdue_alerts() -> int:
     for owner_id, leases in owner_summaries.items():
         owner = db.session.get(User, owner_id)
         total = sum(lease.balance for lease in leases)
-        body = f"{len(leases)} tenant(s) overdue, totalling {total:.2f} outstanding."
-        send_email(owner, "Daily overdue rent summary", body)
+        currencies = {lease.currency for lease in leases}
+        send_email(
+            owner, "Daily overdue rent summary", "{count} tenant(s) overdue, totalling {amount} outstanding.",
+            count=len(leases), amount=Money(total, currencies.pop() if len(currencies) == 1 else None),
+        )
         sent += 1
     return sent
 
@@ -138,13 +156,14 @@ def job_escalate_overdue_maintenance() -> int:
             req.escalated = True
             owner = req.unit.property.owner
             days_over = (today - req.target_date).days
-            body = f"Ticket {req.ticket_number} is {days_over} day(s) past its target completion date."
-            send_email(owner, "Overdue maintenance escalation", body)
+            body = "Ticket {ticket} is {days} day(s) past its target completion date."
+            details = {"ticket": req.ticket_number, "days": days_over}
+            send_email(owner, "Overdue maintenance escalation", body, **details)
             audit_log("maintenance_escalation", "MaintenanceRequest", req.id, new_value={"days_overdue": days_over})
             sent += 1
             if days_over >= 7:
                 for manager in User.query.filter_by(role=ROLE_MANAGER).all():
-                    send_email(manager, "Overdue maintenance escalation", body)
+                    send_email(manager, "Overdue maintenance escalation", body, **details)
 
     db.session.commit()
 
@@ -153,10 +172,10 @@ def job_escalate_overdue_maintenance() -> int:
         age = now - req.created_at
         if age > timedelta(hours=2):
             owner = req.unit.property.owner
-            body = f"EMERGENCY ticket {req.ticket_number} has not been acknowledged in over 2 hours."
-            send_email(owner, "Emergency maintenance not acknowledged", body)
+            body = "EMERGENCY ticket {ticket} has not been acknowledged in over 2 hours."
+            send_email(owner, "Emergency maintenance not acknowledged", body, ticket=req.ticket_number)
             for manager in User.query.filter_by(role=ROLE_MANAGER).all():
-                send_email(manager, "Emergency maintenance not acknowledged", body)
+                send_email(manager, "Emergency maintenance not acknowledged", body, ticket=req.ticket_number)
             audit_log("maintenance_emergency_escalation", "MaintenanceRequest", req.id)
             sent += 1
     return sent

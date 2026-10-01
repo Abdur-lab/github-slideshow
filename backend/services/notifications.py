@@ -1,16 +1,27 @@
 """Email / SMS dispatch. Falls back to a logged dev-mode 'SENT' status when
 no provider API key is configured, so the app and test suite run fully
 offline. Provider calls are wrapped so a provider error marks the
-notification FAILED rather than raising."""
+notification FAILED rather than raising.
+
+Subjects and bodies are passed in English with {placeholders} and are
+translated into the recipient's saved language (User.language) here, so a
+nightly job writes to each person in their own language."""
 from flask import current_app
 
 from backend.extensions import db
+from backend.i18n import render_message, use_language
 from backend.models import Notification, User
 
 
-def send_email(recipient: User, subject: str, body: str) -> Notification | None:
+def _in_language(lang: str, *texts: str, **values) -> list[str]:
+    with use_language(lang):
+        return [render_message(text, **values) for text in texts]
+
+
+def send_email(recipient: User, subject: str, body: str, **values) -> Notification | None:
     if recipient.opt_out_email:
         return None
+    subject, body = _in_language(recipient.language, subject, body, **values)
     notif = Notification(recipient_id=recipient.id, type="EMAIL", subject=subject, body=body, status="PENDING")
     db.session.add(notif)
     db.session.commit()
@@ -40,10 +51,12 @@ def send_email(recipient: User, subject: str, body: str) -> Notification | None:
     return notif
 
 
-def send_email_raw(to_email: str, subject: str, body: str) -> bool:
+def send_email_raw(to_email: str, subject: str, body: str, **values) -> bool:
     """Sends to an address with no User row yet (e.g. a tenant invitation
     sent before the invitee has an account) — not logged as a Notification
-    since that table's recipient_id is a required FK to users.id."""
+    since that table's recipient_id is a required FK to users.id. Written in
+    the sender's current language, since the invitee has no saved one yet."""
+    subject, body = render_message(subject, **values), render_message(body, **values)
     api_key = current_app.config.get("SENDGRID_API_KEY")
     if not api_key:
         return True
@@ -58,9 +71,10 @@ def send_email_raw(to_email: str, subject: str, body: str) -> bool:
         return False
 
 
-def send_sms(recipient: User, body: str) -> Notification | None:
+def send_sms(recipient: User, body: str, **values) -> Notification | None:
     if recipient.opt_out_sms:
         return None
+    (body,) = _in_language(recipient.language, body, **values)
     notif = Notification(recipient_id=recipient.id, type="SMS", body=body, status="PENDING")
     db.session.add(notif)
     db.session.commit()

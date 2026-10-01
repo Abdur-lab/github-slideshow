@@ -2,7 +2,7 @@
 {% block title %}{{ _('Submit Maintenance Request') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Submit Maintenance Request') }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">

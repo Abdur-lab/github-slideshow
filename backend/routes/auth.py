@@ -75,7 +75,7 @@ def forgot_password():
             db.session.add(reset)
             db.session.commit()
             link = url_for("auth.reset_password", token=reset.token, _external=True)
-            send_email(user, "Reset your RentalPro password", f"Reset your password (valid 1 hour): {link}")
+            send_email(user, "Reset your RentalPro password", "Reset your password (valid 1 hour): {link}", link=link)
         flash(_("If that email exists, a reset link has been sent."), "info")
         return redirect(url_for("auth.login"))
     return render_template("auth/forgot_password.html")

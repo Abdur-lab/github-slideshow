@@ -4,7 +4,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (see env.example)}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       DATABASE_URL: postgresql://rentalpro:rentalpro@db:5432/rentalpro
       REDIS_URL: redis://redis:6379/0
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
@@ -13,6 +14,13 @@ services:
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      S3_PREFIX: ${S3_PREFIX:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     depends_on:
       - db
       - redis

@@ -72,7 +72,7 @@ def add():
             db.session.add(reset)
             db.session.commit()
             link = url_for("auth.reset_password", token=reset.token, _external=True)
-            send_email(user, "Welcome to RentalPro", f"An account has been created for you. Set your password: {link}")
+            send_email(user, "Welcome to RentalPro", "An account has been created for you. Set your password: {link}", link=link)
 
         flash(_("Tenant profile created."), "success")
         if unit_id:
@@ -110,7 +110,7 @@ def invite():
         db.session.add(invitation)
         db.session.commit()
         link = url_for("auth.accept_invitation", token=invitation.token, _external=True)
-        send_email_raw(email, "You're invited to RentalPro", f"You've been invited to set up your tenant account: {link}")
+        send_email_raw(email, "You're invited to RentalPro", "You've been invited to set up your tenant account: {link}", link=link)
         audit_log("tenant_invited", "Unit", unit.id, new_value={"email": email})
         flash(_("Invitation sent to {email} (valid 48 hours).", email=ltr(email)), "success")
         return redirect(url_for("properties.detail", property_id=unit.property_id))
@@ -194,7 +194,8 @@ def upload_lease(tenant_id):
         send_email(
             tenant.user,
             "Your lease has been activated",
-            f"Your lease for unit {unit.unit_code} from {lease.start_date} to {lease.end_date} is now active.",
+            "Your lease for unit {unit} from {start} to {end} is now active.",
+            unit=unit.unit_code, start=lease.start_date, end=lease.end_date,
         )
         flash(_("Lease activated and unit marked Occupied."), "success")
         return redirect(url_for("tenants.detail", tenant_id=tenant.id))

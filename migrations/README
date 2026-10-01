@@ -1,0 +1,9 @@
+Database migrations (Alembic, via Flask-Migrate).
+
+  flask create-db                      apply all pending migrations (also run by the Docker entrypoint)
+  flask db migrate -m "Describe it"    after changing backend/models.py, generate a new migration
+  flask db upgrade / flask db downgrade
+
+Review every generated file before committing: Alembic cannot detect renames
+and may miss some type changes. tests/test_migrations.py fails if the models
+and the migrations ever describe different schemas.

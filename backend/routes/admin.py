@@ -6,7 +6,7 @@ import secrets
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from backend.i18n import translate as _
+from backend.i18n import Code, translate as _
 from backend.extensions import db
 from backend.models import MANAGEMENT_ROLES, ROLE_ADMIN, ROLE_OWNER, ROLE_STAFF, ROLES, PasswordReset, User
 from backend.security import audit_log, current_user, role_required, validate
@@ -55,7 +55,7 @@ def edit_user(user_id):
         old_value={"role": old_role, "is_active": old_active},
         new_value={"role": new_role, "is_active": new_active},
     )
-    send_email(target, "Your RentalPro account was updated", f"Your account role is now {new_role.replace('_', ' ').title()}.")
+    send_email(target, "Your RentalPro account was updated", "Your account role is now {role}.", role=Code(new_role))
     flash(_("Updated {name}.", name=target.full_name), "success")
     return redirect(url_for("admin.users"))
 
@@ -90,7 +90,10 @@ def add_staff():
         audit_log("staff_created", "User", user.id, new_value={"email": email})
 
         link = url_for("auth.reset_password", token=reset.token, _external=True)
-        send_email(user, "Welcome to RentalPro", f"A Maintenance Staff account has been created for you. Set your password: {link}")
+        send_email(
+            user, "Welcome to RentalPro", "A Maintenance Staff account has been created for you. Set your password: {link}",
+            link=link,
+        )
 
         flash(_("Staff account created for {name}.", name=user.full_name), "success")
         return redirect(url_for("admin.users") if current_user().role == ROLE_ADMIN else url_for("maintenance.index"))

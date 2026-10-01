@@ -68,7 +68,7 @@
     <h4>{{ _('Submitted Photos') }}</h4>
     <div class="grid grid-3">
       {% for p in req.photo_paths %}
-        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+        <img class="photo-thumb" src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}">
       {% endfor %}
     </div>
     {% endif %}
@@ -76,7 +76,7 @@
     <h4>{{ _('Completion Photos') }}</h4>
     <div class="grid grid-3">
       {% for p in req.completion_photo_paths %}
-        <img src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}" style="width:100%;border-radius:6px;border:1px solid var(--border)">
+        <img class="photo-thumb" src="{{ url_for('maintenance.photo', request_id=req.id, relpath=p.split('/')[-1]) }}">
       {% endfor %}
     </div>
     {% endif %}
@@ -85,7 +85,7 @@
     {% if current_user.role == 'TENANT' and req.status == 'COMPLETED' %}
     <hr>
     <h4>{{ _('Review Completed Work') }}</h4>
-    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" style="margin-bottom:0.5rem">
+    <form class="mb-half" method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" value="close">
       <div class="field">
@@ -107,7 +107,7 @@
 
     {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') and req.status not in ('CLOSED',) %}
     <hr>
-    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ _('Force-close this request?') }}">
+    <form method="post" action="{{ url_for('maintenance.update', request_id=req.id) }}" data-confirm="{{ _('Force-close this request?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" value="close">
       <button class="btn btn-secondary btn-sm" type="submit">{{ _('Force Close') }}</button>
@@ -128,14 +128,14 @@
 
     {% if current_user.role in ('ADMIN', 'PROPERTY_OWNER', 'PROPERTY_MANAGER') %}
     <hr>
-    <h3>{% if req.total_cost %}{{ _('Costs (total {amount})', amount="%.2f"|format(req.total_cost)) }}{% else %}{{ _('Costs') }}{% endif %}</h3>
+    <h3>{% if req.total_cost %}{{ _('Costs (total {amount})', amount=req.total_cost|money(req.currency)) }}{% else %}{{ _('Costs') }}{% endif %}</h3>
     {% set costs = req.costs.all() %}
     {% if costs %}
     <table>
       <thead><tr><th>{{ _('Category') }}</th><th>{{ _('Amount') }}</th><th>{{ _('Description') }}</th></tr></thead>
       <tbody>
       {% for c in costs %}
-        <tr><td>{{ c.category|label }}</td><td>{{ "%.2f"|format(c.amount) }}</td><td>{{ c.description or "—" }}</td></tr>
+        <tr><td>{{ c.category|label }}</td><td>{{ c.amount|money(req.currency) }}</td><td>{{ c.description or "—" }}</td></tr>
       {% endfor %}
       </tbody>
     </table>

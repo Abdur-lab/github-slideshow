@@ -2,7 +2,7 @@
 {% block title %}{{ _('Add Staff Account') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Add Maintenance Staff Account') }}</h1>
-<div class="card" style="max-width:500px">
+<div class="card-narrow card">
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">

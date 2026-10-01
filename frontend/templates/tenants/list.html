@@ -17,7 +17,7 @@
         <td><a href="{{ url_for('tenants.detail', tenant_id=tenant.id) }}">{{ tenant.user.full_name }}</a></td>
         <td>{{ tenant.national_id }}</td>
         <td>{{ lease.unit.unit_code if lease else "—" }}</td>
-        <td>{{ "%.2f"|format(lease.balance) if lease else "—" }}</td>
+        <td>{{ lease.balance|money(lease.currency) if lease else "—" }}</td>
         <td>{% if tenant.is_blacklisted %}<span class="badge badge-red">{{ _('Blacklisted') }}</span>{% elif lease %}{{ status_badge(lease.status) }}{% else %}<span class="badge badge-gray">{{ _('No Lease') }}</span>{% endif %}</td>
       </tr>
     {% endfor %}

@@ -2,7 +2,7 @@
 {% block title %}{{ _('Add Unit') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Add Unit to {property}', property=property.name) }}</h1>
-<div class="card" style="max-width:600px">
+<div class="card-form card">
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="grid grid-2">

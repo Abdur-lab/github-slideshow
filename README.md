@@ -49,11 +49,13 @@ backend/
   extensions.py          db, csrf, limiter, cache, scheduler singletons
   models.py               13 SQLAlchemy models + business logic (balances, occupancy, numbering)
   security.py              auth, RBAC, IDOR guard, input validation, audit log
+  web_security.py           secret-key check at start-up, security headers
   scheduler_jobs.py         the 4 background jobs (UC-11, UC-14, UC-15, UC-23)
   seed.py                    Harare demo data (matches credentials below)
   i18n.py                     English/Shona/Arabic interface translation
   routes/                     auth, dashboard, properties, tenants, rent, portal, maintenance, reports, api
   services/                    notifications.py, payments.py, pdf.py, reports.py
+migrations/                   Alembic migrations (Flask-Migrate); see migrations/README
 frontend/
   templates/                  Jinja2 templates (base layout + one per page)
   static/css/style.css         design system
@@ -65,6 +67,11 @@ tests/
   test_scheduler.py                 the 4 background jobs, invoked directly
   test_validation.py                validate(), validate_upload(), Stripe HMAC, idempotency
   test_i18n.py                      English/Shona/Arabic, right-to-left, language menu, place names never translated
+  test_translated_documents.py      emails, SMS, PDFs, Excel and CSV in the reader's language
+  test_web_security.py              secret key, security headers, cookie flags, no inline code
+  test_migrations.py                migrations match the models; old databases are adopted
+  test_storage.py                   uploads on local disk or in an S3-compatible bucket
+  test_money.py                     amounts shown with their currency everywhere
   test_unit_history_and_maintenance_summary.py  tenant history per unit (FR-015), maintenance summary per period (FR-036)
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
 Dockerfile, docker-compose.yml, .github/workflows/ci.yml
@@ -107,15 +114,16 @@ All 25 use cases from the SRS are implemented, with a route and a covering test:
 ### Docker (recommended)
 
 ```bash
-cp env.example .env   # set SECRET_KEY at minimum
+cp env.example .env   # SECRET_KEY is required; compose will not start without it
 docker compose up --build
 # App:        http://localhost:5000
 # PostgreSQL: localhost:5432
 # Redis:      localhost:6379
 ```
 
-The container entrypoint waits for Postgres, creates the schema (`flask
-create-db`), and seeds demo data (`flask seed-db`) automatically on first run.
+The container entrypoint waits for Postgres, applies the database migrations
+(`flask create-db`), and seeds demo data (`flask seed-db`) automatically on
+first run.
 
 ### Local (without Docker)
 
@@ -134,6 +142,38 @@ Any of `SENDGRID_API_KEY`, `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`, and
 `STRIPE_SECRET_KEY` can be left unset — email/SMS then log as `SENT`
 without calling an external API, and online payments use a simulated
 checkout, so the whole app is exercisable offline.
+
+### Uploaded files
+
+Lease PDFs, ID documents and photos are stored on local disk
+(`UPLOAD_FOLDER`) by default. Most hosting platforms wipe a server's disk
+on every redeploy, so production should use a bucket:
+
+```bash
+STORAGE_BACKEND=s3
+S3_BUCKET=rentalpro-uploads
+S3_REGION=af-south-1                  # or S3_ENDPOINT_URL for Cloudflare R2, MinIO, ...
+AWS_ACCESS_KEY_ID=...  AWS_SECRET_ACCESS_KEY=...
+```
+
+Routes and stored paths are identical for both backends
+(`backend/services/storage.py`). Files stay private: they are streamed
+through the app after its permission checks, never exposed by a public link.
+
+### Database migrations
+
+The schema is managed by Alembic migrations in `migrations/`, so a model
+change never requires dropping a live database:
+
+```bash
+flask create-db                       # apply pending migrations (safe to re-run)
+flask db migrate -m "Add unit notes"  # after editing backend/models.py
+flask db upgrade                      # or: flask db downgrade
+```
+
+A database created before migrations existed (by the old `db.create_all()`)
+is recognised and recorded at the first migration, keeping its data.
+`tests/test_migrations.py` fails if the models and migrations ever differ.
 
 ## Demo Credentials
 
@@ -169,22 +209,35 @@ Postgres volume) to reload it.
 
 A language button sits in the top bar and on the login page. It shows the
 current language; click its arrow to open a list of English, ChiShona and
-العربية (Arabic). The choice is kept in the session and survives logging in
-and out. `backend/i18n.py` holds the Shona and Arabic phrase tables;
-templates wrap interface text in `_("...")`, and any phrase without an entry
-falls back to English.
+العربية (Arabic). The choice is kept in the session, survives logging in and
+out, and is saved to the user's account (`users.language`), so it follows
+them to other browsers. `backend/i18n.py` holds the Shona and Arabic phrase
+tables; templates wrap interface text in `_("...")`, and any phrase without
+an entry falls back to English.
 
 Arabic pages are laid out right to left: the page is marked `dir="rtl"`, so
 the navigation starts from the right and tables read from right to left.
 The stylesheet aligns text to the start of the line rather than to a fixed
-side, so one stylesheet serves both directions.
+side, so one stylesheet serves both directions. Dates and codes inside
+Arabic sentences are wrapped in invisible Unicode isolates so they keep
+their left-to-right order.
 
-Translated: navigation for every role, login and password reset, the
-portfolio dashboard, the properties, tenants, rent tracker and maintenance
-lists, the tenant dashboard and Pay Rent page, and status badges. Other
-pages and flash messages are still English only. Data is never translated:
+**Arabic covers everything the app shows or sends:**
+- every page, message and form option;
+- **emails and SMS**, which are written in the recipient's saved language,
+  including those sent by the nightly jobs;
+- **PDFs** (statements, receipts, reports), which use the bundled DejaVu Sans
+  font. Arabic text is joined into its connected letter forms
+  (`arabic-reshaper`) and put into right-to-left order (`python-bidi`), and
+  tables are mirrored;
+- **the Excel report**, whose sheets open right to left in Arabic, and the
+  **CSV export**, which carries a byte-order mark so Excel reads the Arabic
+  headings.
+
+`tests/test_i18n.py` fails if any of this text lacks Arabic. Shona covers the
+main screens and falls back to English elsewhere. Data is never translated:
 property names, addresses, suburbs, cities and people's names read the same
-in every language, which `tests/test_i18n.py` checks.
+in every language, which `tests/test_i18n.py` also checks.
 
 ## Run the Test Suite
 
@@ -200,8 +253,8 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 244 tests (244 passed, 0 skipped on the latest run),
-0 failures, 83% statement coverage across `backend/` (`pytest --cov=backend`).
+**Current results:** 298 tests (298 passed, 0 skipped on the latest run),
+0 failures, 85% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.
@@ -264,7 +317,15 @@ map tiles themselves, which is unavoidable for any real map. Covered by
 - **CSRF** — Flask-WTF `CSRFProtect`, exempted only for the Stripe webhook.
 - **Account lockout** — 5 failed logins locks the account for 15 minutes.
 - **Open-redirect protection** — the login and language-switch `next=`
-  parameters are validated (netloc and scheme must be empty) before use.
+  parameters must be same-site paths (no scheme, host or backslash).
+- **Secret key required** — the app refuses to start when `SECRET_KEY` is
+  missing or a published placeholder, since that would let anyone forge a
+  login. With `FLASK_DEBUG=1` it uses a random key for that run instead.
+- **Security headers** — a Content-Security-Policy allowing scripts and styles
+  from this site only (no inline code), `X-Frame-Options: DENY`, `nosniff`,
+  a strict `Referrer-Policy`, and HSTS over HTTPS.
+- **Session cookie** — `HttpOnly` and `SameSite=Lax`; set
+  `SESSION_COOKIE_SECURE=true` in production so it is only sent over HTTPS.
 - **Stripe webhook verification** — manual `t=<ts>,v1=<hmac>` HMAC check
   with a 300-second replay window, independent of the Stripe SDK's own
   verifier so it's unit-testable offline; idempotent on `gateway_ref`.

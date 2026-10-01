@@ -161,4 +161,4 @@ def test_statement_page_shows_revisions(client, db, owner, active_lease):
     resp = client.get(f"/rent/{active_lease.id}/statement")
     assert resp.status_code == 200
     assert b"Market adjustment" in resp.data
-    assert b"1250.00" in resp.data
+    assert b"USD 1,250.00" in resp.data

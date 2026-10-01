@@ -123,7 +123,7 @@ def test_period_totals_tie_out_to_lease_balance_over_full_history(client, db, ow
     end = date.today().isoformat()
     resp = client.get(f"/rent/{active_lease.id}/statement?start={start}&end={end}")
     assert resp.status_code == 200
-    assert f"{active_lease.balance:.2f}".encode() in resp.data
+    assert f"{active_lease.balance:,.2f}".encode() in resp.data
 
 
 def test_payment_dates_show_date_without_time(client, db, owner, active_lease):

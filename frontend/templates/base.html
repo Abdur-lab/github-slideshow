@@ -75,14 +75,7 @@
   </div>
 </div>
 {% endif %}
-<script>
-  // Close the language menu when clicking elsewhere or pressing Escape.
-  document.addEventListener("click", (e) => {
-    document.querySelectorAll("details.lang-menu[open]").forEach((m) => { if (!m.contains(e.target)) m.removeAttribute("open"); });
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") document.querySelectorAll("details.lang-menu[open]").forEach((m) => m.removeAttribute("open"));
-</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -17,12 +17,12 @@
         <td>{{ u.role|label }}</td>
         <td>{% if u.is_active %}<span class="badge badge-green">{{ _('Active') }}</span>{% else %}<span class="badge badge-red">{{ _('Inactive') }}</span>{% endif %}</td>
         <td>
-          <form method="post" action="{{ url_for('admin.edit_user', user_id=u.id) }}" style="display:flex;gap:0.4rem;align-items:center">
+          <form class="inline-form" method="post" action="{{ url_for('admin.edit_user', user_id=u.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <select name="role" style="width:auto">
+            <select class="w-auto" name="role">
               {% for r in roles %}<option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r|label }}</option>{% endfor %}
             </select>
-            <label style="display:flex;align-items:center;gap:0.25rem;font-weight:normal;white-space:nowrap">
+            <label class="inline-check">
               <input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %}> {{ _('Active') }}
             </label>
             <button class="btn btn-sm btn-secondary" type="submit">{{ _('Save') }}</button>

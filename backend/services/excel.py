@@ -1,9 +1,14 @@
-"""Excel (.xlsx) report export via openpyxl (FR-043 / UC-25)."""
+"""Excel (.xlsx) report export via openpyxl (FR-043 / UC-25).
+
+Sheet names and headings are in the viewer's interface language; an
+Arabic workbook also opens right to left."""
 import io
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from backend.i18n import text_direction, translate as _
+from backend.services.reports import REPORT_METRICS
 
 HEADER_FILL = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
 HEADER_FONT = Font(color="FFFFFF", bold=True)
@@ -18,32 +23,24 @@ def _write_header(ws, headers):
 
 def render_portfolio_report_xlsx(summary: dict) -> bytes:
     wb = Workbook()
+    rtl = text_direction() == "rtl"
 
     overview = wb.active
-    overview.title = "Portfolio Summary"
-    _write_header(overview, ["Metric", "Value"])
-    for key in (
-        "total_units",
-        "occupied_units",
-        "occupancy_rate",
-        "rent_collected",
-        "rent_outstanding",
-        "maintenance_cost",
-        "general_expenses",
-        "total_expenses",
-        "net_income_estimate",
-    ):
-        if key in summary:
-            overview.append([key.replace("_", " ").title(), summary[key]])
+    overview.title = _("Portfolio Summary")
+    _write_header(overview, [_("Metric"), _("Value")])
+    for key, name in REPORT_METRICS.items():
+        if key in summary and key != "open_maintenance_requests":
+            overview.append([_(name), summary[key]])
     overview.column_dimensions["A"].width = 24
     overview.column_dimensions["B"].width = 18
 
-    by_property = wb.create_sheet("By Property")
+    by_property = wb.create_sheet(_("By Property"))
     _write_header(
         by_property,
         [
-            "Property", "Code", "Total Units", "Occupied", "Occupancy %", "Rent Collected", "Outstanding",
-            "Maintenance Cost", "General Expenses", "Total Expenses", "Net Income", "Open Requests",
+            _("Property"), _("Code"), _("Total Units"), _("Occupied"), _("Occupancy %"), _("Rent Collected"),
+            _("Outstanding"), _("Maintenance Cost"), _("General Expenses"), _("Total Expenses"), _("Net Income"),
+            _("Open Requests"),
         ],
     )
     for p in summary.get("properties", []):
@@ -55,6 +52,9 @@ def render_portfolio_report_xlsx(summary: dict) -> bytes:
         ])
     for col, width in zip("ABCDEFGHIJKL", (24, 12, 10, 10, 12, 14, 12, 16, 16, 14, 14, 14)):
         by_property.column_dimensions[col].width = width
+
+    for ws in (overview, by_property):
+        ws.sheet_view.rightToLeft = rtl
 
     buffer = io.BytesIO()
     wb.save(buffer)

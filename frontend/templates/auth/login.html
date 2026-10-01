@@ -12,7 +12,7 @@
     <label for="password">{{ _('Password') }}</label>
     <input type="password" id="password" name="password" required>
   </div>
-  <button class="btn" type="submit" style="width:100%">{{ _('Log in') }}</button>
+  <button class="btn-block btn" type="submit">{{ _('Log in') }}</button>
 </form>
 <p class="mt-1"><a href="{{ url_for('auth.forgot_password') }}">{{ _('Forgot your password?') }}</a></p>
 {% endblock %}

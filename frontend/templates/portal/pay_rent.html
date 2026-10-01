@@ -2,13 +2,13 @@
 {% block title %}{{ _('Pay Rent') }} — RentalPro{% endblock %}
 {% block content %}
 <h1>{{ _('Pay Rent') }}</h1>
-<div class="card" style="max-width:480px">
+<div class="card-xs card">
   <p><strong>{{ _('Unit:') }}</strong> {{ _('{property} · Unit {unit}', property=lease.unit.property.name, unit=lease.unit.unit_number) }}</p>
-  <p><strong>{{ _('Amount due:') }}</strong> {{ "%.2f"|format(lease.balance) }}</p>
+  <p><strong>{{ _('Amount due:') }}</strong> {{ lease.balance|money(lease.currency) }}</p>
   {% if lease.balance > 0 %}
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn" type="submit" style="width:100%">{{ _('Pay Now') }}</button>
+    <button class="btn-block btn" type="submit">{{ _('Pay Now') }}</button>
   </form>
   {% else %}
   <p class="text-muted">{{ _('You have no outstanding balance. Thank you!') }}</p>
