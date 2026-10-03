@@ -100,3 +100,74 @@ def test_rate_limit_page_is_translated():
     page = resp.get_data(as_text=True)
     assert "محاولات كثيرة جدًا" in page and 'dir="rtl"' in page
     assert "Too Many Requests" not in page
+
+
+def test_https_is_recognised_behind_a_proxy():
+    """Render and similar hosts end HTTPS at their proxy and reach the app over HTTP."""
+    from backend.extensions import db
+    from backend.models import ROLE_OWNER, Notification
+    from tests.conftest import make_user
+
+    app = create_app(type("BehindProxy", (TestConfig,), {"TRUST_FORWARDED_PROTO": True}))
+    with app.app_context():
+        db.create_all()
+        user = make_user(db, "owner@test.com", ROLE_OWNER)
+        resp = app.test_client().post(
+            "/forgot-password", data={"email": user.email}, headers={"X-Forwarded-Proto": "https"}
+        )
+        assert "max-age=" in resp.headers["Strict-Transport-Security"]
+        assert "https://localhost/reset-password/" in Notification.query.one().body
+
+
+def test_forwarded_proto_is_ignored_unless_configured(client):
+    resp = client.get("/login", headers={"X-Forwarded-Proto": "https"})
+    assert "Strict-Transport-Security" not in resp.headers
+
+
+@pytest.mark.parametrize(
+    "client_ip_header, second_visitor_limited",
+    [
+        ("True-Client-IP", False),  # behind the proxy: each visitor has their own limit
+        ("", True),  # reached directly: a forged header does not escape the limit
+    ],
+)
+def test_login_rate_limit_is_per_visitor_behind_a_proxy(client_ip_header, second_visitor_limited):
+    from backend.extensions import db, limiter
+
+    config = {"RATELIMIT_ENABLED": True, "CLIENT_IP_HEADER": client_ip_header}
+    app = create_app(type("BehindProxy", (TestConfig,), config))
+    limiter.enabled = True
+    with app.app_context():
+        db.create_all()
+    client = app.test_client()
+
+    def attempt(ip):
+        return client.post("/login", data={"email": "nobody@test.com", "password": "x"}, headers={"True-Client-IP": ip})
+
+    try:
+        for _ in range(10):
+            attempt("203.0.113.1")
+        assert attempt("203.0.113.1").status_code == 429
+        assert (attempt("203.0.113.2").status_code == 429) is second_visitor_limited
+    finally:
+        limiter.reset()
+
+
+def test_a_malformed_client_ip_header_keeps_the_connecting_address():
+    from backend.extensions import db
+    from backend.models import AuditLog
+    from backend.security import audit_log
+
+    app = create_app(type("BehindProxy", (TestConfig,), {"CLIENT_IP_HEADER": "True-Client-IP"}))
+    with app.app_context():
+        db.create_all()
+
+    @app.route("/_audit")
+    def _audit():
+        return audit_log("probe", "Test").ip_address
+
+    client = app.test_client()
+    assert client.get("/_audit", headers={"True-Client-IP": " 2001:db8::1 "}).text == "2001:db8::1"
+    assert client.get("/_audit", headers={"True-Client-IP": "not-an-ip"}).text == "127.0.0.1"
+    with app.app_context():
+        assert AuditLog.query.count() == 2

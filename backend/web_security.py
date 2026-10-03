@@ -1,6 +1,10 @@
-"""Start-up and response hardening: a real secret key and standard security headers."""
+"""Start-up and response hardening: a real secret key, standard security headers,
+and the visitor's real address and scheme when running behind a proxy."""
+import ipaddress
 import os
 import secrets
+
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Placeholder values that have appeared in this project's config and docs.
 INSECURE_SECRET_KEYS = {
@@ -65,3 +69,36 @@ def add_security_headers(response):
     if request.is_secure:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
+
+
+def trust_proxy_headers(app) -> None:
+    """On a hosting platform every request reaches the app from the platform's proxy,
+    over plain HTTP. Without this, all visitors share the proxy's address (and so one
+    login rate limit), HSTS is never sent, and emailed reset and invitation links
+    start with http://. Both settings are off unless configured, because a visitor
+    who reaches the app directly could forge these headers.
+
+    CLIENT_IP_HEADER names a header the proxy overwrites with the visitor's address
+    (True-Client-IP on Render, CF-Connecting-IP behind Cloudflare). It becomes
+    request.remote_addr, which the rate limiter and the audit log use.
+    TRUST_FORWARDED_PROTO=true takes the scheme from the proxy's X-Forwarded-Proto.
+    """
+    if app.config.get("TRUST_FORWARDED_PROTO"):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=0, x_proto=1)
+    header = app.config.get("CLIENT_IP_HEADER")
+    if header:
+        app.wsgi_app = _client_ip_from_header(app.wsgi_app, header)
+
+
+def _client_ip_from_header(wsgi_app, header: str):
+    key = "HTTP_" + header.upper().replace("-", "_")
+
+    def middleware(environ, start_response):
+        value = environ.get(key, "").strip()
+        try:
+            environ["REMOTE_ADDR"] = str(ipaddress.ip_address(value))
+        except ValueError:
+            pass  # missing or malformed: keep the connecting address
+        return wsgi_app(environ, start_response)
+
+    return middleware

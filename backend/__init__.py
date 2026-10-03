@@ -1,4 +1,10 @@
 import os
+import tempfile
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 
 from flask import Flask, jsonify, render_template
 
@@ -17,9 +23,10 @@ def create_app(config_class=Config):
     )
     app.config.from_object(config_class)
 
-    from backend.web_security import add_security_headers, check_secret_key
+    from backend.web_security import add_security_headers, check_secret_key, trust_proxy_headers
 
     check_secret_key(app)
+    trust_proxy_headers(app)
     app.after_request(add_security_headers)
 
     db.init_app(app)
@@ -129,15 +136,42 @@ def register_scheduler(app):
 
         return runner
 
-    if not scheduler.running:
-        scheduler.add_job(_wrap(job_lease_expiry_alerts), "cron", hour=9, minute=0, id="lease_expiry_alerts", replace_existing=True)
-        scheduler.add_job(_wrap(job_rent_due_alerts), "cron", hour=8, minute=0, id="rent_due_alerts", replace_existing=True)
-        scheduler.add_job(_wrap(job_auto_bill_rent), "cron", hour=8, minute=15, id="auto_bill_rent", replace_existing=True)
-        scheduler.add_job(_wrap(job_overdue_alerts), "cron", hour=8, minute=30, id="overdue_alerts", replace_existing=True)
-        scheduler.add_job(
-            _wrap(job_escalate_overdue_maintenance), "cron", hour=7, minute=0, id="maintenance_escalation", replace_existing=True
-        )
-        scheduler.start()
+    global _scheduler_lock
+    if scheduler.running:
+        return
+    # Gunicorn runs several worker processes and each builds the app, but only the
+    # one holding the lock runs the jobs, so each notice goes out once, not once per worker.
+    _scheduler_lock = _scheduler_lock or claim_scheduler_lock(SCHEDULER_LOCK_PATH)
+    if _scheduler_lock is None:
+        return
+    scheduler.add_job(_wrap(job_lease_expiry_alerts), "cron", hour=9, minute=0, id="lease_expiry_alerts", replace_existing=True)
+    scheduler.add_job(_wrap(job_rent_due_alerts), "cron", hour=8, minute=0, id="rent_due_alerts", replace_existing=True)
+    scheduler.add_job(_wrap(job_auto_bill_rent), "cron", hour=8, minute=15, id="auto_bill_rent", replace_existing=True)
+    scheduler.add_job(_wrap(job_overdue_alerts), "cron", hour=8, minute=30, id="overdue_alerts", replace_existing=True)
+    scheduler.add_job(
+        _wrap(job_escalate_overdue_maintenance), "cron", hour=7, minute=0, id="maintenance_escalation", replace_existing=True
+    )
+    scheduler.start()
+
+
+SCHEDULER_LOCK_PATH = os.path.join(tempfile.gettempdir(), "rentalpro-scheduler.lock")
+_scheduler_lock = None
+
+
+def claim_scheduler_lock(path):
+    """Take an exclusive lock on path for the life of this process. Returns the open
+    lock file (closing it releases the lock), or None if another process holds it.
+    The kernel releases the lock when its process exits, so the worker Gunicorn
+    starts in place of a dead one takes the jobs over."""
+    lock_file = open(path, "a")
+    if fcntl is None:  # no flock on Windows, which is only used for local development
+        return lock_file
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock_file.close()
+        return None
+    return lock_file
 
 
 # The first migration: the schema db.create_all() used to build before migrations existed.

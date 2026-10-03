@@ -74,7 +74,7 @@ tests/
   test_money.py                     amounts shown with their currency everywhere
   test_unit_history_and_maintenance_summary.py  tenant history per unit (FR-015), maintenance summary per period (FR-036)
 app.py                                entry point (`python app.py` / `gunicorn app:app`)
-Dockerfile, docker-compose.yml, .github/workflows/ci.yml
+Dockerfile, docker-compose.yml, render.yaml, .github/workflows/ci.yml
 ```
 
 ## Use Case Implementation Status
@@ -175,6 +175,28 @@ A database created before migrations existed (by the old `db.create_all()`)
 is recognised and recorded at the first migration, keeping its data.
 `tests/test_migrations.py` fails if the models and migrations ever differ.
 
+### Deploy to Render
+
+`render.yaml` describes the whole deployment: the web app built from the
+`Dockerfile` and a PostgreSQL database, both on Render's free plan. In the
+Render dashboard choose **New > Blueprint**, pick this repository, and
+confirm. Render generates `SECRET_KEY`, connects `DATABASE_URL`, serves the
+site over HTTPS at `https://<service-name>.onrender.com`, and redeploys on
+every push to `main`. The first start creates the demo accounts below.
+
+On the free plan the app sleeps after 15 minutes without visitors (the next
+visit takes about a minute to wake it), and the background jobs only run if
+it is awake at their scheduled time. Uploads are lost on every redeploy and
+restart unless `STORAGE_BACKEND=s3` is set (see [Uploaded files](#uploaded-files)).
+Check Render's pricing page for how long a free database is kept.
+
+The same image runs on any host that provides PostgreSQL and HTTPS. Behind
+the host's proxy, set `SESSION_COOKIE_SECURE=true`, `TRUST_FORWARDED_PROTO=true`,
+and `CLIENT_IP_HEADER` to the header the proxy fills with the visitor's
+address (`True-Client-IP` on Render, `CF-Connecting-IP` behind Cloudflare).
+Leave the last two unset when visitors reach the app directly, since they
+could then forge those headers.
+
 ## Demo Credentials
 
 All demo accounts use the password `demo123`.
@@ -253,8 +275,8 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 298 tests (298 passed, 0 skipped on the latest run),
-0 failures, 85% statement coverage across `backend/` (`pytest --cov=backend`).
+**Current results:** 305 tests (305 passed, 0 skipped on the latest run),
+0 failures, 86% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.
@@ -326,6 +348,12 @@ map tiles themselves, which is unavoidable for any real map. Covered by
   a strict `Referrer-Policy`, and HSTS over HTTPS.
 - **Session cookie** — `HttpOnly` and `SameSite=Lax`; set
   `SESSION_COOKIE_SECURE=true` in production so it is only sent over HTTPS.
+- **Behind a proxy** — with `CLIENT_IP_HEADER` and `TRUST_FORWARDED_PROTO`
+  set, rate limits and the audit log see each visitor's own address, and
+  HTTPS is recognised, so HSTS is sent and emailed links use `https://`.
+- **Background jobs run once** — Gunicorn's workers each build the app, but
+  only the one holding a lock file runs the scheduled jobs, so each notice
+  is sent once.
 - **Stripe webhook verification** — manual `t=<ts>,v1=<hmac>` HMAC check
   with a 300-second replay window, independent of the Stripe SDK's own
   verifier so it's unit-testable offline; idempotent on `gateway_ref`.

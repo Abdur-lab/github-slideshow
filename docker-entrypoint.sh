@@ -3,12 +3,13 @@ set -e
 
 echo "Waiting for database..."
 python - <<'PY'
-import os
 import time
 
 import sqlalchemy
 
-url = os.environ.get("DATABASE_URL", "sqlite:///rentalpro.db")
+from backend.config import Config
+
+url = Config.SQLALCHEMY_DATABASE_URI
 for attempt in range(30):
     try:
         engine = sqlalchemy.create_engine(url)
