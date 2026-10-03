@@ -1,0 +1,37 @@
+# Render Blueprint: the web app, built from the Dockerfile, plus a PostgreSQL
+# database. In the Render dashboard choose New > Blueprint and pick this
+# repository. On first start the container applies the migrations and creates
+# the demo accounts listed in the README.
+services:
+  - type: web
+    name: rentalpro
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rentalpro-db
+          property: connectionString
+      # The Dockerfile's Gunicorn listens on 5000; this tells Render where to send traffic.
+      - key: PORT
+        value: "5000"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      # Render's proxy ends HTTPS and passes on the scheme and the visitor's
+      # address in these headers (see backend/web_security.py).
+      - key: TRUST_FORWARDED_PROTO
+        value: "true"
+      - key: CLIENT_IP_HEADER
+        value: True-Client-IP
+      # Uploads stay on the instance's own disk, which Render wipes on every
+      # redeploy and restart. To keep them, add STORAGE_BACKEND=s3 and the
+      # bucket settings from env.example in the dashboard.
+
+databases:
+  - name: rentalpro-db
+    plan: free
+    databaseName: rentalpro
+    user: rentalpro

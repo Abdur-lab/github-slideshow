@@ -168,3 +168,16 @@ def test_audit_log_safe_outside_request_context(app):
         entry = audit_log("scheduler_test", "System", None)
         assert entry.ip_address == "scheduler"
         assert entry.user_id is None
+
+
+def test_only_one_worker_process_runs_the_scheduler(tmp_path):
+    from backend import claim_scheduler_lock
+
+    path = tmp_path / "scheduler.lock"
+    first_worker = claim_scheduler_lock(path)
+    assert first_worker is not None
+    assert claim_scheduler_lock(path) is None  # every other worker skips the jobs
+    first_worker.close()  # the worker exits...
+    replacement = claim_scheduler_lock(path)
+    assert replacement is not None  # ...and the one started in its place takes over
+    replacement.close()

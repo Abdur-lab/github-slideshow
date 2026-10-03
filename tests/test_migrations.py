@@ -5,7 +5,7 @@ from alembic.migration import MigrationContext
 from flask_migrate import downgrade, upgrade
 
 from backend import INITIAL_REVISION, MIGRATIONS_DIR, create_app, upgrade_database
-from backend.config import TestConfig
+from backend.config import TestConfig, database_url
 from backend.extensions import db
 from backend.models import ROLE_OWNER, User
 
@@ -66,3 +66,14 @@ def test_the_initial_revision_constant_names_the_first_migration():
     versions = pathlib.Path(MIGRATIONS_DIR) / "versions"
     first = [p for p in versions.glob("*.py") if "down_revision = None" in p.read_text()]
     assert len(first) == 1 and f"revision = '{INITIAL_REVISION}'" in first[0].read_text()
+
+
+def test_postgres_urls_use_the_installed_driver():
+    """Render and Heroku hand out postgres://, which SQLAlchemy 2 rejects, and SQLAlchemy 2.1
+    defaults postgresql:// to psycopg 3, which is not installed."""
+    from sqlalchemy.engine import make_url
+
+    for url in ("postgres://u:p@host/db", "postgresql://u:p@host/db"):
+        assert make_url(database_url(url)).get_dialect().driver == "psycopg2"
+    assert database_url("postgresql+psycopg2://u:p@host/db") == "postgresql+psycopg2://u:p@host/db"
+    assert database_url("sqlite:///rentalpro.db") == "sqlite:///rentalpro.db"
