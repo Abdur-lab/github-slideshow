@@ -1,0 +1,104 @@
+1
+00:00:00,646 --> 00:00:02,196
+RentalPro — Administrator & Tenant Walkthrough — Signing in as the administrator, Abdur-Rahmaan Ali (admin@rentalpro.com)
+
+2
+00:00:02,734 --> 00:00:08,336
+Administrator Dashboard — The whole Harare portfolio at a glance: 16 units, occupancy, rent collected, outstanding balances and open maintenance
+
+3
+00:00:08,356 --> 00:00:13,557
+Administrator Menu — Alongside the management pages, the administrator alone has Manage Users; Add Staff creates maintenance staff accounts
+
+4
+00:00:13,682 --> 00:00:19,284
+Manage Users & Roles — Every account in the system with its role and status — only the administrator can open this page
+
+5
+00:00:20,907 --> 00:00:25,107
+Add a Staff Account — The administrator creates an account for a new maintenance technician, Tatenda Dube
+
+6
+00:00:25,898 --> 00:00:31,900
+Account Created — Tatenda Dube now appears as Maintenance Staff — a welcome email with a link to set a password goes to the new account
+
+7
+00:00:31,960 --> 00:00:35,762
+Deactivating an Account — Untick Active and save — a deactivated account can no longer sign in
+
+8
+00:00:36,273 --> 00:00:41,474
+Account Deactivated — Every role or status change is recorded in the audit log, and the user is emailed about it
+
+9
+00:00:41,816 --> 00:00:46,018
+A Built-in Safeguard — Trying to change Tendai Moyo, the only Property Owner, into a Property Manager…
+
+10
+00:00:46,186 --> 00:00:51,787
+Change Blocked — The system refuses: every account must keep at least one active Property Owner
+
+11
+00:00:52,407 --> 00:00:56,207
+Full Management Access — The administrator can also open every management page — properties…
+
+12
+00:00:56,896 --> 00:01:00,496
+Full Management Access — …tenants, with their units and balances…
+
+13
+00:01:01,211 --> 00:01:05,413
+Full Management Access — …and portfolio reports, exportable to Excel and PDF
+
+14
+00:01:06,579 --> 00:01:08,052
+Tenant Portal — Signing in as tenant Chipo Mutasa (tenant1@email.com) — tenants land on their own portal
+
+15
+00:01:08,457 --> 00:01:14,858
+My Dashboard — Her unit at Avondale Heights, monthly rent of USD 850.00, the balance due, recent payments and her maintenance requests
+
+16
+00:01:14,875 --> 00:01:19,276
+The Tenant Menu — Four items only: My Dashboard, Pay Rent, Payment History and Submit Request
+
+17
+00:01:19,929 --> 00:01:25,331
+Full Account Statement — Rent due, payments, charges and the balance on her lease — downloadable as a PDF
+
+18
+00:01:25,948 --> 00:01:30,949
+Payment History — Each payment with its method and receipt number — the history can be exported to CSV
+
+19
+00:01:31,303 --> 00:01:36,903
+Payment Receipt — The Receipt button opens a PDF receipt for that payment
+
+20
+00:01:40,027 --> 00:01:44,627
+Submit a Maintenance Request — Title, category, severity and a description — up to three photos can be attached
+
+21
+00:01:44,839 --> 00:01:51,241
+Request Received — She gets a ticket number straight away, and the request appears under My Maintenance Requests; the owner is notified by email
+
+22
+00:01:51,881 --> 00:01:56,481
+Pay Rent — The amount due for her unit — Pay Now goes to online checkout
+
+23
+00:01:56,755 --> 00:02:03,157
+Payment Successful — Offline, a simulated checkout stands in for Stripe: the payment is recorded and her balance is now zero
+
+24
+00:02:03,743 --> 00:02:08,543
+Payment History — The online payment is listed with its own receipt number
+
+25
+00:02:09,150 --> 00:02:14,751
+Only Her Own Data — Management pages are refused to tenants — she can see only her own lease, payments and requests
+
+26
+00:02:15,371 --> 00:02:19,972
+RentalPro — IT401 Capstone — Administrator and tenant walkthrough. Thank you.
+
