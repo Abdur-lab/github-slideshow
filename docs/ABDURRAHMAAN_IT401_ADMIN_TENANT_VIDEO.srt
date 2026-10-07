@@ -1,0 +1,95 @@
+1
+00:00:00,543 --> 00:00:05,171
+RentalPro — Admin and Tenant in Action
+Signing in as the administrator, Abdur-Rahmaan Ali
+
+2
+00:00:05,321 --> 00:00:09,677
+Admin Dashboard
+The whole Harare portfolio at a glance: properties, occupancy, rent collected and outstanding
+
+3
+00:00:09,827 --> 00:00:14,830
+Manage Users
+Only the administrator sees this page: every account, its role, and whether it is active
+
+4
+00:00:14,980 --> 00:00:19,694
+Rent Tracker
+Paid-up leases in green, balances due in red — Precious Ndlovu owes this month’s $1,400
+
+5
+00:00:19,844 --> 00:00:24,820
+Recording a Payment
+Precious Ndlovu paid her $1,400 by cheque at the office — the admin records it
+
+6
+00:00:24,970 --> 00:00:28,312
+Payment Saved
+A receipt number is issued and the payment is written to the audit log
+
+7
+00:00:28,462 --> 00:00:31,819
+Precious Is Paid Up
+Her balance is cleared — Nyasha Mapfumo will pay her $600 online herself
+
+8
+00:00:31,969 --> 00:00:35,958
+Switching to the Tenant
+Signing out, then signing in as tenant Nyasha Mapfumo
+
+9
+00:00:36,108 --> 00:00:40,463
+Tenant Dashboard
+Nyasha sees her unit (Eastlea Garden Flats, Unit 3), her $600 balance and her requests
+
+10
+00:00:40,613 --> 00:00:45,322
+Paying Rent Online
+Pay Rent shows the amount due; Pay Now goes to checkout (simulated here, so no real card is charged)
+
+11
+00:00:45,472 --> 00:00:49,829
+Payment Successful
+The balance drops to $0.00 and Nyasha and the owner are both sent a confirmation email
+
+12
+00:00:49,979 --> 00:00:54,468
+Payment History
+Every payment with its date, method and receipt number
+
+13
+00:00:54,618 --> 00:01:03,301
+Reporting a Problem
+Nyasha submits a maintenance request: the bedroom light keeps flickering
+
+14
+00:01:03,451 --> 00:01:08,582
+Request Submitted
+She gets a ticket number, and the request shows on her dashboard as Submitted
+
+15
+00:01:08,732 --> 00:01:13,405
+Back to the Administrator
+The admin signs in again to deal with the new request
+
+16
+00:01:13,555 --> 00:01:18,038
+New Request in the Queue
+Nyasha’s high-severity electrical request is at the top of the maintenance list
+
+17
+00:01:18,188 --> 00:01:23,186
+Assigning the Job
+The admin assigns it to maintenance staff member Farai Ncube with a target date
+
+18
+00:01:23,336 --> 00:01:28,191
+Request Assigned
+Status is now Assigned — Farai and Nyasha are both notified by email
+
+19
+00:01:28,341 --> 00:01:38,592
+The Tenant Sees the Update
+Signed in again, Nyasha’s dashboard shows her request is Assigned and her rent is paid
+

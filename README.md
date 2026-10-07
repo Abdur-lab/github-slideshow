@@ -20,7 +20,7 @@ self-service, per-property late fees, and CSV/Excel export.
 | 5 | Fully-developed application — 100% of SRS features implemented and tested | ✅ Complete |
 | 6 | Project demo video, presentation video, and final capstone report | ✅ **Complete** |
 
-See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage (the full write-up, with a traceability table for all 44 functional requirements, is `docs/ABDURRAHMAAN_IT401_DEL_5.docx`), and `docs/ABDURRAHMAAN_IT401_DEL_6_*` for the Deliverable 6 files (demo video, presentation video + slide deck, and the final report). Each report (Deliverables 3–6) is in `docs/` both as a Word document and as a PDF, and the slide deck is there as PowerPoint and PDF.
+See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage (the full write-up, with a traceability table for all 44 functional requirements, is `docs/ABDURRAHMAAN_IT401_DEL_5.docx`), and `docs/ABDURRAHMAAN_IT401_DEL_6_*` for the Deliverable 6 files (demo video, presentation video + slide deck, and the final report). Each report (Deliverables 3–6) is in `docs/` both as a Word document and as a PDF, and the slide deck is there as PowerPoint and PDF. `docs/ABDURRAHMAAN_IT401_ADMIN_TENANT_VIDEO.mp4` is a short (1:39, subtitled) video of the administrator and a tenant using the site end to end: recording a payment, paying rent online, reporting a maintenance problem and assigning it to staff.
 
 ## Technology Stack
 
