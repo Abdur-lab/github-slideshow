@@ -1,132 +1,132 @@
 1
-00:00:00,649 --> 00:00:02,298
+00:00:00,939 --> 00:00:02,642
 RentalPro — Harare Portfolio Walkthrough — Signing in as Administrator Abdur-Rahmaan Ali (admin@rentalpro.com)
 
 2
-00:00:02,960 --> 00:00:07,561
+00:00:03,165 --> 00:00:07,766
 Portfolio Dashboard — Five Harare properties, 16 units, 56% occupied — rent collected and outstanding at a glance, in US dollars
 
 3
-00:00:08,159 --> 00:00:12,760
+00:00:08,348 --> 00:00:12,949
 Properties — Avondale, the CBD, Eastlea and Vainona — each section of the app has its own Harare photograph
 
 4
-00:00:13,762 --> 00:00:18,362
+00:00:14,122 --> 00:00:18,723
 Portfolio Map — Every located property is pinned; each pin links back to its property record
 
 5
-00:00:19,877 --> 00:00:25,077
+00:00:20,216 --> 00:00:25,417
 Avondale Heights — Units, occupancy and the property’s own location pin
 
 6
-00:00:25,746 --> 00:00:30,346
+00:00:26,046 --> 00:00:30,646
 Tenants — Nine Harare tenants — national IDs, units and balances in one list
 
 7
-00:00:31,051 --> 00:00:35,651
+00:00:31,318 --> 00:00:35,919
 Rent Tracker — Paid-up and overdue leases — Nyasha Mapfumo is one month (USD 600.00) behind
 
 8
-00:00:36,354 --> 00:00:41,354
+00:00:36,554 --> 00:00:41,555
 Recording a Payment — The manager records Nyasha’s USD 600.00 cash payment
 
 9
-00:00:41,643 --> 00:00:46,246
+00:00:41,779 --> 00:00:46,383
 Balance Cleared — Nyasha Mapfumo is now paid up — every payment gets a receipt number and an audit-log entry
 
 10
-00:00:46,849 --> 00:00:51,449
+00:00:46,962 --> 00:00:51,563
 Maintenance — The leaking-faucet ticket, assigned to maintenance staff member Farai Ncube
 
 11
-00:00:52,150 --> 00:00:57,751
+00:00:52,206 --> 00:00:57,806
 Reports — Collected, outstanding, expenses and net income for each property — exportable to Excel or PDF
 
 12
-00:00:58,465 --> 00:01:03,066
+00:00:58,469 --> 00:01:03,070
 Three Languages — The language button in the top bar opens a list: English, ChiShona and Arabic
 
 13
-00:01:03,281 --> 00:01:08,881
+00:01:03,246 --> 00:01:08,847
 Dhashibhodhi yeZvivakwa — Choosing ChiShona: menus, headings, tiles and badges in Shona — property and people’s names stay as entered
 
 14
-00:01:09,196 --> 00:01:15,197
+00:01:09,075 --> 00:01:15,077
 Arabic, Right to Left — Choosing Arabic mirrors the whole page: the menu starts on the right and tables read right to left
 
 15
-00:01:15,802 --> 00:01:20,402
+00:01:15,653 --> 00:01:20,253
 The Choice Carries Over — Signed out, the login page stays in Arabic — and it is saved to the account, so it follows the user to any browser
 
 16
-00:01:21,197 --> 00:01:22,633
+00:01:20,898 --> 00:01:22,295
 Tenant Portal in Shona — Switching the login page to ChiShona, then signing in as tenant Chipo Mutasa
 
 17
-00:01:23,265 --> 00:01:28,670
+00:01:22,558 --> 00:01:27,958
 Tenant Portal in Shona — Chipo Mutasa: “Mauya” (welcome), her unit as “Avondale Heights · Yuniti 101”, and her balance in USD
 
 18
-00:01:29,275 --> 00:01:34,276
+00:01:28,527 --> 00:01:33,528
 Bhadhara Rendi — Pay Rent — Tenants can pay online; offline, the app uses a simulated checkout so everything runs without paid accounts
 
 19
-00:01:34,515 --> 00:01:39,118
+00:01:33,697 --> 00:01:38,299
 Back to English — One choice from the menu switches back — it is remembered for the account
 
 20
-00:01:39,714 --> 00:01:44,315
+00:01:38,877 --> 00:01:43,478
 Already Signed In? — Opening the login page while signed in goes straight to your own portal, not a blank page
 
 21
-00:01:45,440 --> 00:01:46,982
+00:01:44,572 --> 00:01:46,152
 Tenant History per Unit — Signed in as the owner, Tendai Moyo — every unit has a History button
 
 22
-00:01:48,808 --> 00:01:52,809
+00:01:47,683 --> 00:01:51,684
 Tenant History per Unit — Every unit has a History button next to Edit
 
 23
-00:01:53,423 --> 00:01:58,823
+00:01:52,256 --> 00:01:57,657
 Tenant History — Unit 101 — Current and former tenants, newest first (the former tenant was added to the demo data for this example)
 
 24
-00:01:59,826 --> 00:02:05,829
+00:01:58,598 --> 00:02:04,600
 Maintenance Summary — Reports count open, in-progress and closed requests per property for a chosen period — this month by default
 
 25
-00:02:07,121 --> 00:02:08,675
+00:02:05,839 --> 00:02:07,357
 Now Every Page Is in Arabic — Signing in as the property manager, Rutendo Chikore, in Arabic
 
 26
-00:02:10,508 --> 00:02:16,508
+00:02:08,791 --> 00:02:14,792
 Tenant Profile in Arabic — Every page and form is translated — dates and amounts like “USD 4,250.00” keep their order inside Arabic text
 
 27
-00:02:17,160 --> 00:02:22,760
+00:02:15,416 --> 00:02:21,016
 Rent Statement in Arabic — Payments, charges, the electricity meter, rent revisions and invoices — every heading, button and note
 
 28
-00:02:23,432 --> 00:02:27,033
+00:02:21,677 --> 00:02:25,278
 Messages in Arabic Too — Recording Chipo’s payment in Arabic
 
 29
-00:02:27,346 --> 00:02:33,347
+00:02:25,488 --> 00:02:31,489
 Messages in Arabic Too — The confirmation, like every message and error, is in Arabic — and her email receipt goes out in her own saved language
 
 30
-00:02:33,663 --> 00:02:40,065
+00:02:31,741 --> 00:02:38,164
 Arabic PDFs — The statement PDF from the same page: Arabic letters joined and right to left, the table mirrored, names and amounts in order
 
 31
-00:02:41,381 --> 00:02:42,893
-RentalPro — IT401 Capstone — Signing back in as the administrator
+00:02:39,429 --> 00:02:40,929
+RentalPro — IT402 Capstone — Signing back in as the administrator
 
 32
-00:02:43,446 --> 00:02:49,047
-Under the Hood — Every amount with its currency, security headers, database migrations and optional cloud storage for uploads
+00:02:41,252 --> 00:02:46,853
+Under the Hood — Every amount with its currency, security headers, database migrations, optional cloud storage for uploads and deployment to Render
 
 33
-00:02:49,055 --> 00:02:54,256
-RentalPro — IT401 Capstone — A complete rental management system for Harare, in English, Shona and Arabic. Thank you.
+00:02:46,862 --> 00:02:52,063
+RentalPro — IT402 Capstone — A complete rental management system for Harare, in English, Shona and Arabic. Thank you.
 
