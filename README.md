@@ -2,25 +2,27 @@
 
 IT Capstone project (RentalPro): a Flask application implementing 100% of
 the functional requirements from the Software Requirements Specification
-(Deliverable 1) — property listing, tenant records, rent tracking, and
+(IT401 Deliverable 1) — property listing, tenant records, rent tracking, and
 maintenance requests, across five roles (Property Owner, Property Manager,
-Tenant, Maintenance Staff, Admin). Deliverable 5 closed every remaining
+Tenant, Maintenance Staff, Admin). IT402 Deliverable 2 closed every remaining
 gap against the SRS: unit editing, property/unit/maintenance photo
 uploads, tenant blacklisting, admin user & role management, staff account
 self-service, per-property late fees, and CSV/Excel export.
 
 ## Deliverable Status
 
-| # | Deliverable | Status |
-|---|---|---|
-| 1 | Software Requirements Specification | ✅ Complete |
-| 2 | UML & Database Design | ✅ Complete |
-| 3 | Working prototype application | ✅ Complete |
-| 4 | Complete project report (7 chapters + 2 appendices) | ✅ Complete |
-| 5 | Fully-developed application — 100% of SRS features implemented and tested | ✅ Complete |
-| 6 | Project demo video, presentation video, and final capstone report | ✅ **Complete** |
+The project ran across two courses: IT401 (IT Capstone I) and IT402 (IT Capstone II).
 
-See [Deliverable 5 — Feature Completion](#deliverable-5--feature-completion) below for the full list of gaps closed and their test coverage (the full write-up, with a traceability table for all 44 functional requirements, is `docs/ABDURRAHMAAN_IT401_DEL_5.docx`), and `docs/ABDURRAHMAAN_IT401_DEL_6_*` for the Deliverable 6 files (demo video, presentation video + slide deck, and the final report). Each report (Deliverables 3–6) is in `docs/` both as a Word document and as a PDF, and the slide deck is there as PowerPoint and PDF. `docs/ABDURRAHMAAN_IT401_ADMIN_TENANT_VIDEO.mp4` is a short (1:39, subtitled) video of the administrator and a tenant using the site end to end: recording a payment, paying rent online, reporting a maintenance problem and assigning it to staff. `docs/ABDURRAHMAAN_IT401_ADMIN_TENANT_WALKTHROUGH.mp4` (2:20, subtitled) is a longer tour of the same two roles: the administrator managing users and roles (adding and deactivating a staff account, and the rule that keeps at least one active Property Owner), then the tenant's portal: statement, payment history and receipts, a maintenance request, paying rent online, and being refused management pages.
+| Course | # | Deliverable | Status |
+|---|---|---|---|
+| IT401 | 1 | Software Requirements Specification | ✅ Complete |
+| IT401 | 2 | UML & Database Design | ✅ Complete |
+| IT401 | 3 | Working prototype application | ✅ Complete |
+| IT402 | 1 | Complete project report (7 chapters + 3 appendices) | ✅ Complete |
+| IT402 | 2 | Fully-developed application — 100% of SRS features implemented and tested | ✅ Complete |
+| IT402 | 3 | Project demo video, presentation video, and final capstone report | ✅ **Complete** |
+
+See [IT402 Deliverable 2 — Feature Completion](#it402-deliverable-2--feature-completion) below for the full list of gaps closed and their test coverage (the full write-up, with a traceability table for all 44 functional requirements, is `docs/ABDURRAHMAAN_IT402_DEL_2.docx`), and `docs/ABDURRAHMAAN_IT402_DEL_3_*` for the IT402 Deliverable 3 files (demo video, presentation video + slide deck, and the final report). The complete project report is `docs/ABDURRAHMAAN_IT402_DEL_1.docx`, and `docs/ABDURRAHMAAN_IT401_DEL_3.docx` is the IT401 prototype report as submitted. Each report is in `docs/` both as a Word document and as a PDF, and the slide deck is there as PowerPoint and PDF. `docs/ABDURRAHMAAN_IT402_ADMIN_TENANT_VIDEO.mp4` is a short (1:39, subtitled) video of the administrator and a tenant using the site end to end: recording a payment, paying rent online, reporting a maintenance problem and assigning it to staff. `docs/ABDURRAHMAAN_IT402_ADMIN_TENANT_WALKTHROUGH.mp4` (2:18, subtitled) is a longer tour of the same two roles: the administrator managing users and roles (adding and deactivating a staff account, and the rule that keeps at least one active Property Owner), then the tenant's portal: statement, payment history and receipts, a maintenance request, paying rent online, and being refused management pages. `docs/ABDURRAHMAAN_IT402_UI_WALKTHROUGH.pdf` walks through every screen for each role.
 
 ## Technology Stack
 
@@ -281,12 +283,12 @@ One scheduler test self-skips on dates near month-end, where day-of-month clippi
 (e.g. a due day of 31 landing in February) could shift the exact alert
 date being asserted by a day.
 
-## Deliverable 5 — Feature Completion
+## IT402 Deliverable 2 — Feature Completion
 
 **Status: ✅ Complete — 100% of the SRS's functional requirements are
 implemented and covered by an automated test.**
 
-Deliverable 5 closed every gap between Deliverable 3's initial implementation
+IT402 Deliverable 2 closed every gap between IT401 Deliverable 3's initial implementation
 and 100% of the SRS's functional requirements:
 
 | Gap closed | FR / UC | Where |
@@ -307,7 +309,7 @@ All of the above ship with photo/document upload validation (magic-byte
 checks reused from the existing PDF validator, extended to JPEG/PNG) and
 are covered by `tests/test_deliverable5.py` (31 tests).
 
-The Deliverable 5 report (`docs/ABDURRAHMAAN_IT401_DEL_5.docx`) later traced all
+The IT402 Deliverable 2 report (`docs/ABDURRAHMAAN_IT402_DEL_2.docx`) later traced all
 44 functional requirements one by one and found two only partly met: a full
 tenant history per unit (FR-015) and a maintenance summary per period (FR-036).
 Both were added afterwards — a History page on every unit and a Maintenance
@@ -363,7 +365,7 @@ map tiles themselves, which is unavoidable for any real map. Covered by
   `AuditLog` row (`user_id`, `action`, entity, before/after, `ip_address`);
   safe to call from a background job (`ip_address='scheduler'`).
 
-## Notable Design Deviations from Deliverable 2
+## Notable Design Deviations from IT401 Deliverable 2
 
 Two swaps were made for a simpler, more portable Docker build, without
 changing what the application does:
