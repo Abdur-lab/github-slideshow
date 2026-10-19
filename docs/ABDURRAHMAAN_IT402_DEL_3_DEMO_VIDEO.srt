@@ -28,7 +28,7 @@ Rent Tracker — Paid-up and overdue leases — Nyasha Mapfumo is one month (USD
 
 8
 00:00:36,554 --> 00:00:41,555
-Recording a Payment — The manager records Nyasha’s USD 600.00 cash payment
+Recording a Payment — The administrator records Nyasha’s USD 600.00 cash payment
 
 9
 00:00:41,779 --> 00:00:46,383
