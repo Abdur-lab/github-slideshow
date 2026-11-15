@@ -59,3 +59,30 @@ def render_portfolio_report_xlsx(summary: dict) -> bytes:
     buffer = io.BytesIO()
     wb.save(buffer)
     return buffer.getvalue()
+
+
+def render_maintenance_summary_xlsx(summary: dict) -> bytes:
+    """FR-036 maintenance summary as a workbook: the period, then open, in
+    progress and closed requests per property, with a total row when the
+    summary covers more than one property."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = _("Maintenance Summary")
+    ws.append([_("From"), summary["start"].isoformat()])
+    ws.append([_("To"), summary["end"].isoformat()])
+    ws.append([])
+    _write_header(ws, [_("Property"), _("Open"), _("In Progress"), _("Closed"), _("Total")])
+    for row in summary["properties"]:
+        ws.append([row["property_name"], row["open"], row["in_progress"], row["closed"], row["total"]])
+    if len(summary["properties"]) > 1:
+        totals = summary["totals"]
+        ws.append([_("All properties"), totals["open"], totals["in_progress"], totals["closed"], totals["total"]])
+        for cell in ws[ws.max_row]:
+            cell.font = Font(bold=True)
+    for col, width in zip("ABCDE", (28, 12, 14, 12, 12)):
+        ws.column_dimensions[col].width = width
+    ws.sheet_view.rightToLeft = text_direction() == "rtl"
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()

@@ -277,3 +277,35 @@ def render_property_report_pdf(property_obj, summary: dict) -> bytes:
         )
     )
     return _build(elements)
+
+
+def render_maintenance_summary_pdf(property_obj, summary: dict) -> bytes:
+    """FR-036 maintenance summary for the chosen period; property_obj=None
+    covers the whole portfolio."""
+    w = _Writer()
+    t = w.t
+    if property_obj is None:
+        heading = t("All Properties (Portfolio)")
+    else:
+        heading = t("Property: {name}", name=f"{property_obj.name} ({property_obj.property_code})")
+    period = t(
+        "Requests raised between {start} and {end}, by their current stage. Open covers Submitted, Acknowledged and Assigned; Closed covers Completed and Closed.",
+        start=summary["start"].isoformat(), end=summary["end"].isoformat(),
+    )
+    elements = [
+        w.para(t("RentalPro — Maintenance Summary"), "Title"), w.para(heading), Spacer(1, 0.15 * inch),
+        w.para(period), Spacer(1, 0.25 * inch),
+    ]
+    rows = [[t("Property"), t("Open"), t("In Progress"), t("Closed"), t("Total")]]
+    rows += [[r["property_name"], r["open"], r["in_progress"], r["closed"], r["total"]] for r in summary["properties"]]
+    commands = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]
+    if len(summary["properties"]) > 1:
+        totals = summary["totals"]
+        rows.append([t("All properties"), totals["open"], totals["in_progress"], totals["closed"], totals["total"]])
+        commands.append(("FONTNAME", (0, -1), (-1, -1), w.bold))
+    elements.append(w.table(rows, [2.6 * inch, 0.9 * inch, 1.1 * inch, 0.9 * inch, 0.9 * inch], commands))
+    return _build(elements)
