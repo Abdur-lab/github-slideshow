@@ -80,11 +80,9 @@
       <div><label for="start">{{ _('From') }}</label><input type="date" id="start" name="start" value="{{ maintenance.start }}"></div>
       <div><label for="end">{{ _('To') }}</label><input type="date" id="end" name="end" value="{{ maintenance.end }}"></div>
       <button class="btn btn-secondary" type="submit">{{ _('Apply') }}</button>
+      <a class="btn btn-secondary" href="{{ url_for('reports.export_maintenance_xlsx', property_id=selected.id if selected else None, start=maintenance.start, end=maintenance.end) }}">{{ _('Export Excel') }}</a>
+      <a class="btn" href="{{ url_for('reports.export_maintenance_pdf', property_id=selected.id if selected else None, start=maintenance.start, end=maintenance.end) }}">{{ _('Export PDF') }}</a>
     </form>
-  </div>
-  <div class="mt-1">
-    <a class="btn btn-secondary" href="{{ url_for('reports.export_maintenance_xlsx', property_id=selected.id if selected else None, start=maintenance.start, end=maintenance.end) }}">{{ _('Export Excel') }}</a>
-    <a class="btn" href="{{ url_for('reports.export_maintenance_pdf', property_id=selected.id if selected else None, start=maintenance.start, end=maintenance.end) }}">{{ _('Export PDF') }}</a>
   </div>
   <p class="text-muted">{{ _('Requests raised between {start} and {end}, by their current stage. Open covers Submitted, Acknowledged and Assigned; Closed covers Completed and Closed.', start=maintenance.start|ltr, end=maintenance.end|ltr) }}</p>
   {% if maintenance.properties %}
