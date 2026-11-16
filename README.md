@@ -277,7 +277,7 @@ Tests run against an in-memory SQLite database with a fresh schema per test
 calls are exercised through their dev-mode fallback and monkeypatched
 failure paths, not live network calls.
 
-**Current results:** 305 tests (305 passed, 0 skipped on the latest run),
+**Current results:** 311 tests (311 passed, 0 skipped on the latest run),
 0 failures, 86% statement coverage across `backend/` (`pytest --cov=backend`).
 One scheduler test self-skips on dates near month-end, where day-of-month clipping
 (e.g. a due day of 31 landing in February) could shift the exact alert
@@ -314,7 +314,9 @@ The IT402 Deliverable 2 report (`docs/ABDURRAHMAAN_IT402_DEL_2.docx`) later trac
 tenant history per unit (FR-015) and a maintenance summary per period (FR-036).
 Both were added afterwards — a History page on every unit and a Maintenance
 Summary on the Reports page — and are covered by
-`tests/test_unit_history_and_maintenance_summary.py` (13 tests). All 44 are now
+`tests/test_unit_history_and_maintenance_summary.py`. In November 2026 the
+Maintenance Summary also gained Excel and PDF export (`/reports/maintenance.xlsx`,
+`/reports/maintenance.pdf`), bringing that test module to 19 tests. All 44 are now
 met; FR-021 (overdue notices) and FR-044 (welcome emails) deliberately differ
 from the SRS wording, as the report explains.
 
