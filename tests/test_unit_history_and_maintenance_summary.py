@@ -133,3 +133,80 @@ def test_reports_page_rejects_start_after_end(client, owner, property_):
     login(client, owner.email)
     html = client.get("/reports?start=2026-09-30&end=2026-09-01").get_data(as_text=True)
     assert "The start date must be on or before the end date" in html
+
+
+# --- FR-036 exports: the maintenance summary as Excel and PDF ----------------------
+
+def test_maintenance_summary_excel_export_has_the_period_and_counts(client, db, owner, property_, unit, tenant):
+    import io
+
+    import openpyxl
+
+    _request(db, unit, tenant, "ASSIGNED")
+    _request(db, unit, tenant, "IN_PROGRESS")
+    _request(db, unit, tenant, "CLOSED")
+    _request(db, unit, tenant, "SUBMITTED", created_days_ago=90)
+    start = (date.today() - timedelta(days=3)).isoformat()
+    end = date.today().isoformat()
+    login(client, owner.email)
+    resp = client.get(f"/reports/maintenance.xlsx?start={start}&end={end}")
+    assert resp.status_code == 200
+    assert f"maintenance-summary-portfolio-{start}-to-{end}.xlsx" in resp.headers["Content-Disposition"]
+    rows = list(openpyxl.load_workbook(io.BytesIO(resp.data))["Maintenance Summary"].iter_rows(values_only=True))
+    assert rows[0][:2] == ("From", start) and rows[1][:2] == ("To", end)
+    assert rows[3] == ("Property", "Open", "In Progress", "Closed", "Total")
+    assert rows[4] == ("Test Towers", 1, 1, 1, 3)
+
+
+def test_maintenance_summary_excel_export_adds_a_total_row_for_several_properties(client, db, owner, property_, unit, tenant):
+    import io
+
+    import openpyxl
+
+    second = Property(owner_id=owner.id, property_code=Property.generate_property_code(), name="Second Court",
+                      address="2 Road", city="Testville", country="Testland")
+    db.session.add(second)
+    db.session.commit()
+    _request(db, unit, tenant, "COMPLETED")
+    login(client, owner.email)
+    rows = list(openpyxl.load_workbook(io.BytesIO(client.get("/reports/maintenance.xlsx").data)).active.iter_rows(values_only=True))
+    assert rows[-1] == ("All properties", 0, 0, 1, 1)
+
+
+def test_maintenance_summary_pdf_export_for_one_property(client, db, owner, property_, unit, tenant):
+    _request(db, unit, tenant, "ASSIGNED")
+    login(client, owner.email)
+    resp = client.get(f"/reports/maintenance.pdf?property_id={property_.id}")
+    assert resp.status_code == 200 and resp.data.startswith(b"%PDF")
+    assert f"maintenance-summary-{property_.property_code}-" in resp.headers["Content-Disposition"]
+
+
+def test_maintenance_summary_exports_render_in_arabic(client, owner, property_):
+    import io
+
+    import openpyxl
+
+    login(client, owner.email)
+    client.get("/lang/ar")
+    pdf = client.get("/reports/maintenance.pdf")
+    assert pdf.status_code == 200 and b"DejaVuSans" in pdf.data
+    wb = openpyxl.load_workbook(io.BytesIO(client.get("/reports/maintenance.xlsx").data))
+    assert wb.sheetnames == ["ملخص الصيانة"] and wb.active.sheet_view.rightToLeft
+
+
+def test_maintenance_summary_exports_are_limited_to_management_and_own_properties(client, db, property_, tenant):
+    other = make_user(db, "other-owner@test.com", ROLE_OWNER)
+    login(client, other.email)
+    for fmt in ("xlsx", "pdf"):
+        assert client.get(f"/reports/maintenance.{fmt}?property_id={property_.id}").status_code in (403, 404)
+    client.get("/logout")
+    login(client, tenant.user.email)
+    for fmt in ("xlsx", "pdf"):
+        assert client.get(f"/reports/maintenance.{fmt}").status_code in (302, 403)
+
+
+def test_reports_page_links_the_exports_to_the_chosen_period(client, owner, property_):
+    login(client, owner.email)
+    html = client.get("/reports?start=2026-09-01&end=2026-09-30").get_data(as_text=True)
+    assert "/reports/maintenance.xlsx?start=2026-09-01&amp;end=2026-09-30" in html
+    assert "/reports/maintenance.pdf?start=2026-09-01&amp;end=2026-09-30" in html

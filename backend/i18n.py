@@ -761,6 +761,7 @@ ARABIC = {
     "Notes": "ملاحظات",
     "Balance after this payment: {amount}": "الرصيد بعد هذه الدفعة: {amount}",
     "RentalPro — Property Performance Report": "RentalPro — تقرير أداء العقارات",
+    "RentalPro — Maintenance Summary": "RentalPro — ملخص الصيانة",
     "Statement period: {start} to {end}": "فترة الكشف: من {start} إلى {end}",
     "Opening balance: {amount}": "الرصيد الافتتاحي: {amount}",
     "Payment": "دفعة",

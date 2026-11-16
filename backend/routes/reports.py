@@ -6,8 +6,8 @@ from backend.i18n import translate as _
 from backend.extensions import db
 from backend.models import MANAGEMENT_ROLES, ROLE_OWNER, Property
 from backend.security import assert_owner, audit_log, current_user, role_required
-from backend.services.excel import render_portfolio_report_xlsx
-from backend.services.pdf import render_property_report_pdf
+from backend.services.excel import render_maintenance_summary_xlsx, render_portfolio_report_xlsx
+from backend.services.pdf import render_maintenance_summary_pdf, render_property_report_pdf
 from backend.services.reports import maintenance_summary, portfolio_performance, property_performance
 
 
@@ -102,3 +102,42 @@ def export_xlsx():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+def _maintenance_export(user):
+    """The property (or None for the portfolio), its maintenance summary for
+    the requested period, and a file name stem for the download."""
+    property_id = request.args.get("property_id")
+    if property_id:
+        assert_owner(property_id)
+        prop = db.get_or_404(Property, property_id)
+        properties, scope = [prop], prop.property_code
+    else:
+        prop, properties, scope = None, _visible_properties(user), "portfolio"
+    start, end = _maintenance_period(request.args)
+    summary = maintenance_summary(properties, start, end)
+    return prop, summary, f"maintenance-summary-{scope}-{start.isoformat()}-to-{end.isoformat()}"
+
+
+@bp.route("/maintenance.xlsx")
+@role_required(*MANAGEMENT_ROLES)
+def export_maintenance_xlsx():
+    prop, summary, stem = _maintenance_export(current_user())
+    xlsx_bytes = render_maintenance_summary_xlsx(summary)
+    audit_log("report_exported", "Property", prop.id if prop else None,
+              new_value={"format": "xlsx", "report": "maintenance_summary"})
+    return Response(
+        xlsx_bytes,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={stem}.xlsx"},
+    )
+
+
+@bp.route("/maintenance.pdf")
+@role_required(*MANAGEMENT_ROLES)
+def export_maintenance_pdf():
+    prop, summary, stem = _maintenance_export(current_user())
+    pdf_bytes = render_maintenance_summary_pdf(prop, summary)
+    audit_log("report_exported", "Property", prop.id if prop else None,
+              new_value={"format": "pdf", "report": "maintenance_summary"})
+    return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": f"attachment; filename={stem}.pdf"})
